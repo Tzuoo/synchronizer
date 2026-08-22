@@ -43,7 +43,12 @@ function formatStructuredSelection(playType,selection){
 
   // 天碰：特碼 / 正碼各自一行
   if(/^天碰/.test(play)){
-    return parts.map(line=>`<div class="bet-line">${line}</div>`).join("");
+    const groups=raw.split(/\n|、(?=\s*特碼)/).map(x=>x.trim()).filter(Boolean);
+    return groups.map(line=>{
+      const m=line.match(/^特碼\s*([^／\n]+)／正碼\s*(.+)$/);
+      if(!m)return `<div class="bet-line">${line}</div>`;
+      return `<div class="sky-group"><div class="pillar-label">特碼</div><div class="pillar-values">${m[1].trim()}</div><div class="pillar-label">正碼</div><div class="pillar-values">${m[2].trim()}</div></div>`;
+    }).join("");
   }
 
   // 特碼單碰：每個號碼與金額一行
