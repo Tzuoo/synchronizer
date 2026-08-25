@@ -1,0 +1,56 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+import vm from "node:vm";
+
+const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const source = html.match(/function isDeletedBet[\s\S]*?(?=\nfunction displayBets)/)?.[0];
+assert.ok(source, "dashboard dedupe functions must be present");
+const context = {};
+vm.runInNewContext(`${source};globalThis.dedupeExactBets=dedupeExactBets`, context);
+
+function wind(id, selection) {
+  return {
+    id,
+    source: "風雲",
+    account: "a0593",
+    placedAt: id.includes("gateway") ? "2026-08-25T21:08:44+08:00" : "2026-08-25T21:08:44.999+08:00",
+    event: "六合 / S589 - 001",
+    playType: "台號",
+    selection,
+    stake: 200,
+    potentialPayout: 200,
+    unitAmount: 200,
+    combinationCount: null,
+    carCount: null,
+    betAmount: 200,
+    status: "待結算",
+    reconciled: false,
+  };
+}
+
+test("風雲 gateway 與明細表格同一筆只保留一次", () => {
+  const rows = [
+    wind("vs968.net|a0593|table|0", "台號 57"),
+    wind("vs968.net|a0593|table|1", "台號 58"),
+    wind("vs968.net|a0593|gateway|1|1", "57"),
+    wind("vs968.net|a0593|gateway|1|2", "58"),
+  ];
+  const result = context.dedupeExactBets(rows);
+  assert.equal(result.length, 2);
+  assert.equal(result.reduce((sum, bet) => sum + bet.betAmount, 0), 400);
+  assert.deepEqual(Array.from(result[0].ids), [rows[0].id, rows[2].id]);
+});
+
+test("同秒兩筆真正相同的明細仍依出現次數保留", () => {
+  const rows = [
+    wind("vs968.net|a0593|table|0", "台號 57"),
+    wind("vs968.net|a0593|table|1", "台號 57"),
+    wind("vs968.net|a0593|gateway|1|1", "57"),
+    wind("vs968.net|a0593|gateway|2|1", "57"),
+  ];
+  const result = context.dedupeExactBets(rows);
+  assert.equal(result.length, 2);
+  assert.equal(result.reduce((sum, bet) => sum + bet.betAmount, 0), 400);
+  assert.ok(result.every(bet => bet.ids.length === 2));
+});
