@@ -67,10 +67,11 @@ test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次
   const rows = [
     { ...base, id: "kd998.net|a0593|kd-batch|G-1|16" },
     { ...base, id: "kd998.net|a0593|kd-batch|G-1|17" },
-    { ...base, id: "kd998.net|a0593|kd-gateway-batch|100" },
-    { ...base, id: "kd998.net|a0593|kd-gateway-batch|101" },
+    { ...base, id: "kd998.net|a0593|kd-gateway-batch|100", selection: "正碼｜7｜下注金額 1140｜車數 未辨識", potentialPayout: 815.67000001, carCount: null, parseStatus: "partial" },
+    { ...base, id: "kd998.net|a0593|kd-gateway-batch|101", selection: "正碼｜7｜下注金額 1140｜車數 未辨識", potentialPayout: 815.67000001, carCount: null, parseStatus: "partial" },
   ];
   const result = context.dedupeExactBets(rows);
   assert.equal(result.length, 2);
   assert.ok(result.every(bet => bet.ids.length === 2));
+  assert.ok(result.every(bet => bet.selection.includes("0.3 車")));
 });
