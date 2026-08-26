@@ -26,3 +26,9 @@ test("喜的群組期別不會被當成帳號", () => {
   assert.equal(joy.account, "a0593");
   assert.equal(context.demo.phase, "C115207");
 });
+
+test("下注明細與總帳使用固定頁籤及可保留的網址狀態", () => {
+  assert.match(html, /id="betsTab"[^>]+href="\?view=bets"[^>]*>下注明細</);
+  assert.match(html, /id="ledgerTab"[^>]+href="\?view=ledger"[^>]*>總帳</);
+  assert.match(html, /PAGE_PARAMS\.get\('view'\)===['"]ledger['"]/);
+});
