@@ -54,3 +54,23 @@ test("同秒兩筆真正相同的明細仍依出現次數保留", () => {
   assert.equal(result.reduce((sum, bet) => sum + bet.betAmount, 0), 400);
   assert.ok(result.every(bet => bet.ids.length === 2));
 });
+
+test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
+  const base = {
+    source: "喜", account: "a0593", placedAt: "2026-08-26T20:26:43+08:00",
+    event: "正碼", playType: "正碼",
+    selection: "正碼｜07｜下注金額 1140｜車數 0.3 車",
+    stake: 1140, potentialPayout: 815.67, unitAmount: 1140,
+    combinationCount: null, carCount: 0.3, betAmount: 1140,
+    status: "待結算", reconciled: false,
+  };
+  const rows = [
+    { ...base, id: "kd998.net|a0593|kd-batch|G-1|16" },
+    { ...base, id: "kd998.net|a0593|kd-batch|G-1|17" },
+    { ...base, id: "kd998.net|a0593|kd-gateway-batch|100" },
+    { ...base, id: "kd998.net|a0593|kd-gateway-batch|101" },
+  ];
+  const result = context.dedupeExactBets(rows);
+  assert.equal(result.length, 2);
+  assert.ok(result.every(bet => bet.ids.length === 2));
+});
