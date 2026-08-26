@@ -21,7 +21,7 @@ if(authToken)lock.classList.add('hidden');
 function authHeaders(extra={}){return {...extra,authorization:`Bearer ${authToken}`}}
 function requireLogin(message='登入已失效，請重新輸入密碼'){authToken='';sessionStorage.removeItem('synchronizerSession');lock.classList.remove('hidden');lockError.textContent=message;lockPassword.focus()}
 lockForm.addEventListener('submit',async e=>{e.preventDefault();lockError.textContent='驗證中…';try{const r=await fetch(`${API_ROOT}/auth`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:lockPassword.value})});const data=await r.json().catch(()=>({}));if(!r.ok||!data.token){lockError.textContent=r.status===429?'嘗試次數過多，請稍後再試':'密碼錯誤，請重新輸入';lockPassword.select();return}authToken=data.token;sessionStorage.setItem('synchronizerSession',authToken);lock.classList.add('hidden');lockPassword.value='';lockError.textContent='';await load()}catch{lockError.textContent='暫時無法登入，請稍後再試'}});
-const BUILD="33",names=["風雲","98","16","28","海勝","航海"];let bets=[],site="全部網站",renderSignature="";let reconciledCache=JSON.parse(localStorage.getItem('synchronizerReconciled')||'{}');const $=s=>document.querySelector(s),money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n)||0);function saveReconciledCache(){localStorage.setItem('synchronizerReconciled',JSON.stringify(reconciledCache))}function orderSignature(rows){return rows.map(b=>[b.id,b.source,b.account,b.placedAt,b.event,b.selection,b.odds,b.stake,b.potentialPayout,b.playType,b.unitAmount,b.combinationCount,b.carCount,b.betAmount,b.parseStatus,b.status,b.result,b.reconciled]).join('|')}function betTotal(b){if(b._sixBatch)return Number(b.potentialPayout||0);if(b.source==="風雲")return Number(b.stake||0);if(b.source==="海勝")return Number(b.potentialPayout||0);return Number(b.potentialPayout??b.stake??0)}fetch(`version.json?ts=${Date.now()}`,{cache:'no-store'}).then(r=>r.json()).then(v=>{if(String(v.build)!==BUILD)location.replace(`${location.pathname}?build=${encodeURIComponent(v.build)}`)}).catch(()=>{});
+const BUILD="34",names=["風雲","98","喜","16","28","海勝","航海"];let bets=[],site="全部網站",renderSignature="";let reconciledCache=JSON.parse(localStorage.getItem('synchronizerReconciled')||'{}');const $=s=>document.querySelector(s),money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n)||0);function saveReconciledCache(){localStorage.setItem('synchronizerReconciled',JSON.stringify(reconciledCache))}function orderSignature(rows){return rows.map(b=>[b.id,b.source,b.account,b.placedAt,b.event,b.selection,b.odds,b.stake,b.potentialPayout,b.playType,b.unitAmount,b.combinationCount,b.carCount,b.betAmount,b.parseStatus,b.status,b.result,b.reconciled]).join('|')}function betTotal(b){if(b._sixBatch)return Number(b.potentialPayout||0);if(b.source==="風雲")return Number(b.stake||0);if(b.source==="海勝")return Number(b.potentialPayout||0);return Number(b.potentialPayout??b.stake??0)}fetch(`version.json?ts=${Date.now()}`,{cache:'no-store'}).then(r=>r.json()).then(v=>{if(String(v.build)!==BUILD)location.replace(`${location.pathname}?build=${encodeURIComponent(v.build)}`)}).catch(()=>{});
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function getBetAmount(b){const v=Number(b.betAmount);if(Number.isFinite(v)&&v>0)return v;if(b._sixBatch)return Number(b.potentialPayout||0);if(b.source==="風雲")return Number(b.stake||0);return Number(b.potentialPayout??b.stake??0)}
 function getUnitAmount(b){const v=Number(b.unitAmount);if(Number.isFinite(v)&&v>0)return v;const isCar=/全車/.test(String(b.event||b.playType||''));if(isCar)return null;const fallback=Number(b.stake);return Number.isFinite(fallback)&&fallback>0?fallback:null}
@@ -32,6 +32,13 @@ function formatStructuredSelection(playType,selection,bet={}){
   const raw=String(selection||"").trim();
   if(!raw)return "";
   const parts=raw.split("、").map(x=>x.trim()).filter(Boolean);
+
+  if(bet.source==="喜"){
+    return raw.split(/\n+/).map(line=>line.trim()).filter(Boolean).map(line=>{
+      const fields=line.split("｜").map(value=>value.trim()).filter(Boolean);
+      return `<div class="bet-line"><span>${escapeHtml(fields.slice(0,2).join(" "))}</span><span class="detail-value">${escapeHtml(fields.slice(2).join("　"))}</span></div>`;
+    }).join("");
+  }
 
   // 柱碰：不依賴「、」或換行；直接依「第XX柱」切割，每柱固定直向一行。
   if(/柱碰/.test(play)){
@@ -131,9 +138,38 @@ function dedupeExactBets(rows){
   return result.map(({_isGatewayRepresentation,_representationMatched,...b})=>b);
 }
 
+function suppressKdLegacyRows(rows){
+  const represented=new Map();
+  rows.filter(b=>b.source==="喜"&&/\|kd-batch\|/.test(String(b.id||""))).forEach(batch=>{
+    const second=String(batch.placedAt||"").replace(/\.\d{1,3}(?=[+-]\d\d:\d\d|Z$)/,"");
+    String(batch.selection||"").split(/\n+/).forEach(line=>{
+      const fields=line.split("｜").map(value=>value.trim());
+      const amount=fields.map(value=>value.match(/^下注金額\s+([\d.]+)$/)?.[1]).find(Boolean)||"";
+      const key=[second,fields[0]||"",fields[1]||"",amount].join("|");
+      const entry=represented.get(key)||{count:0,accounts:new Set()};
+      entry.count+=1;
+      if(batch.account)entry.accounts.add(String(batch.account));
+      represented.set(key,entry);
+    });
+  });
+  return rows.filter(b=>{
+    if(b.source!=="喜"||/\|kd-batch\|/.test(String(b.id||"")))return true;
+    const second=String(b.placedAt||"").replace(/\.\d{1,3}(?=[+-]\d\d:\d\d|Z$)/,"");
+    const selection=String(b.selection||"").trim();
+    const play=String(b.playType||b.event||"").trim();
+    const content=selection.startsWith(`${play} `)?selection.slice(play.length+1).trim():selection;
+    const key=[second,play,content,String(Number(b.betAmount??b.stake)||"")].join("|");
+    const entry=represented.get(key);
+    const account=String(b.account||"");
+    if(!entry?.count||(!/^(?:未設定)?$/.test(account)&&!entry.accounts.has(account)))return true;
+    entry.count-=1;
+    return false;
+  });
+}
+
 function displayBets(){const grouped=[],sixBatches=new Map(),ordered=[...bets].sort((a,b)=>{if(a.source!=="風雲"||b.source!=="風雲"||a.placedAt!==b.placedAt||a.event!==b.event)return 0;const am=String(a.id||'').match(/\|gateway\|[^|]+\|(\d+)$/),bm=String(b.id||'').match(/\|gateway\|[^|]+\|(\d+)$/);if(am&&bm)return Number(am[1])-Number(bm[1]);if(am)return -1;if(bm)return 1;return 0});ordered.forEach(b=>{const rawEvent=String(b.event||'');if(!/^六合(?:\s*\/|$)/.test(rawEvent)){grouped.push(b);return}const second=String(b.placedAt).replace(/\.\d{1,3}(?=[+-]\d\d:\d\d|Z$)/,''),key=[b.source,b.account,second,rawEvent].join('|');let batch=sixBatches.get(key);if(!batch){batch={...b,placedAt:second,event:'台號',playType:'台號',selection:[],ids:[],potentialPayout:0,betAmount:0,reconciled:true,_sixBatch:true,_gatewayDetailKeys:new Set()};sixBatches.set(key,batch);grouped.push(batch)}const number=String(b.selection||'').replace(/^台號\s*/,''),amount=Number(b.stake||0),detailKey=`${number}|${amount}`,isGateway=/\|gateway\|/.test(String(b.id||''));batch.ids.push(b.id);batch.reconciled=batch.reconciled&&Boolean(b.reconciled);if(!isGateway&&batch._gatewayDetailKeys.has(detailKey))return;if(isGateway)batch._gatewayDetailKeys.add(detailKey);batch.selection.push({number,amount});batch.potentialPayout+=Number(b.potentialPayout??b.stake??0);batch.betAmount+=Number(b.betAmount??b.potentialPayout??b.stake??0)});return grouped.map(b=>{const total=getBetAmount(b),unit=getUnitAmount(b),isCar=/全車/.test(String(b.event||b.playType||'')),isSix=Boolean(b._sixBatch),isSpecial=String(b.event||'').replace(/\s+/g,'')==='特碼單碰',playName=isSix?'台號':(b.playType||b.event);return {...b,ids:b.ids||[b.id],countLabel:getCountLabel(b),totalLabel:total?money(total):"—",amountLabel:(isSix||isSpecial||isCar)?"—":(unit?money(unit):"—"),displayEvent:playName,displaySelection:isSix?b.selection.map(x=>`<div class="bet-line"><span>${escapeHtml(x.number)}</span><span class="detail-value">${money(x.amount)}</span></div>`).join(''):formatStructuredSelection(playName,b.selection,b),parseStatus:b.parseStatus||"parsed",deleted:isDeletedBet(b)}})}
 function draw(){const orders=displayBets(),q=$("#query").value.toLowerCase(),filtered=orders.filter(b=>(site==="全部網站"||b.source===site)&&(`${b.source} ${b.account} ${b.displayEvent} ${b.displaySelection}`).toLowerCase().includes(q));$("#total").textContent=money(orders.reduce((s,b)=>s+getBetAmount(b),0));$("#unchecked").textContent=orders.filter(b=>!b.reconciled).length+" 筆";$("#count").textContent=`共 ${filtered.length} 筆`;$("#sites").innerHTML=["全部網站",...names].map(n=>`<button class="site ${site===n?'active':''}" data-site="${escapeHtml(n)}">${escapeHtml(n)}<small> ${n==='全部網站'?orders.length:orders.filter(x=>x.source===n).length}</small></button>`).join("");$("#rows").innerHTML=filtered.length?filtered.map(b=>{const isMulti=b.source==="航海",display=String(b.displaySelection),prefix=`${b.displayEvent} `,content=(isMulti&&display.startsWith(prefix)?display.slice(prefix.length):display).split('、').join(isMulti?'<br>':'、'),status=b.parseStatus==="unknown"?"<span class=\"tag\" style=\"color:var(--red)\">未辨識</span>":b.parseStatus==="partial"?"<span class=\"tag\" style=\"color:var(--yellow)\">部分解析</span>":"";const deletedBadge=b.deleted?'<span class="deleted-badge">已刪單</span>':'';return `<tr class="${b.reconciled?'reconciled-row':''} ${b.deleted?'deleted-row':''}"><td><b>${escapeHtml(b.displayEvent)}</b>${deletedBadge}<small>${content}</small>${status}<button class="check mobile-check ${b.reconciled?'done':''}" data-ids="${encodeURIComponent(JSON.stringify(b.ids))}" data-value="${!b.reconciled}">${b.reconciled?'已對帳':'對帳'}</button></td><td class="money">${b.amountLabel}</td><td>${escapeHtml(b.countLabel)}</td><td>${b.totalLabel}</td><td><b>${new Date(b.placedAt).toLocaleTimeString('zh-TW')}</b><span class="tag">${escapeHtml(b.source)}</span></td><td>${escapeHtml(b.account||'—')}</td><td><button class="check ${b.reconciled?'done':''}" data-ids="${encodeURIComponent(JSON.stringify(b.ids))}" data-value="${!b.reconciled}">${b.reconciled?'已對帳':'對帳'}</button></td></tr>`}).join(''):`<tr><td colspan="7"><div class="empty">尚無資料</div></td></tr>`}
-async function load(){if(!authToken)return;try{const r=await fetch(API,{cache:'no-store',headers:authHeaders()});if(r.status===401){requireLogin();return}if(!r.ok)throw 0;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei'}).format(new Date());const received=((await r.json()).bets||[]).filter(b=>String(b.placedAt).slice(0,10)===today&&!/分組序號報表/i.test(`${b.event||''} ${b.selection||''}`)).map(b=>Object.prototype.hasOwnProperty.call(reconciledCache,b.id)?{...b,reconciled:reconciledCache[b.id]}:b),remote=dedupeExactBets(received),local=bets.filter(b=>b._localTest),next=[...local,...remote],signature=orderSignature(next);bets=next;$("#sync").classList.add("online");$("#sync b").textContent="同步中";if(signature!==renderSignature){renderSignature=signature;draw()}}catch{$("#sync").classList.remove("online");$("#sync b").textContent="連線失敗"}}
+async function load(){if(!authToken)return;try{const r=await fetch(API,{cache:'no-store',headers:authHeaders()});if(r.status===401){requireLogin();return}if(!r.ok)throw 0;const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei'}).format(new Date());const received=((await r.json()).bets||[]).filter(b=>String(b.placedAt).slice(0,10)===today&&!/分組序號報表/i.test(`${b.event||''} ${b.selection||''}`)).map(b=>Object.prototype.hasOwnProperty.call(reconciledCache,b.id)?{...b,reconciled:reconciledCache[b.id]}:b),remote=suppressKdLegacyRows(dedupeExactBets(received)),local=bets.filter(b=>b._localTest),next=[...local,...remote],signature=orderSignature(next);bets=next;$("#sync").classList.add("online");$("#sync b").textContent="同步中";if(signature!==renderSignature){renderSignature=signature;draw()}}catch{$("#sync").classList.remove("online");$("#sync b").textContent="連線失敗"}}
 
 function todayAt(time){const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Taipei'}).format(new Date());return `${today}T${time}+08:00`}
 async function clearAll(){if(!confirm('確定要永久清除全部下注資料嗎？清除後無法復原。'))return;const r=await fetch(API,{method:'DELETE',headers:authHeaders({'content-type':'application/json'}),body:JSON.stringify({confirm:'DELETE_ALL'})});if(r.status===401){requireLogin();return}if(!r.ok){alert('清除失敗，請稍後再試。');return}bets=[];draw();await load()}
