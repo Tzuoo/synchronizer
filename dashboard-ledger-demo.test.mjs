@@ -6,7 +6,7 @@ const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
 test("跨日後不再顯示昨日固定總帳測試資料", () => {
   assert.doesNotMatch(html, /const LEDGER_DEMO/);
   assert.doesNotMatch(html, /161050|28620|C115207|2026-08-26/);
-  assert.match(html, /昨日顯示測試資料已移除/);
+  assert.match(html, /尚未收到今日總帳/);
   assert.match(html, /尚未取得今日總帳資料/);
   assert.match(html, /timeZone:'Asia\/Taipei'/);
 });
