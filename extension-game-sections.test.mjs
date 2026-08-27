@@ -18,3 +18,10 @@ test("共用明細解析保留盤口但玩法名稱仍獨立", () => {
   assert.match(content, /playType: play/);
   assert.match(content, /playType: event/);
 });
+
+test("喜網站不建立第二個隱藏 SPA 造成登入工作階段衝突", () => {
+  assert.doesNotMatch(content, /function ensureKdBackgroundLedger/);
+  assert.doesNotMatch(content, /data-sync-kd-ledger/);
+  assert.match(content, /setInterval\(syncLedgerDom, 10000\)/);
+  assert.match(content, /isSharedGatewayWorkFrame/);
+});
