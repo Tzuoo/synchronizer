@@ -16,6 +16,7 @@ const context = {
   orderStatusFromText: () => "正常",
   enrichedBet: (base, extra) => ({ ...base, ...extra }),
   combinationCountFor: () => null,
+  itemNumberFromOrderContext: () => "5",
 };
 vm.runInNewContext(`${scraper};globalThis.scrapeAmcOrders=scrapeAmcOrders`, context);
 
@@ -38,6 +39,7 @@ test("航海三星連柱碰保留網站名稱、全部號碼與網站碰數", ()
 
   assert.equal(rows.length, 1);
   assert.equal(rows[0].event, "539 / 三星連柱碰");
+  assert.equal(rows[0].itemNumber, "5");
   assert.equal(rows[0].playType, "三星連柱碰");
   assert.equal(rows[0].unitAmount, 50);
   assert.equal(rows[0].combinationCount, 1890);
