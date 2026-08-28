@@ -8,6 +8,8 @@ const extension = await readFile(new URL("../RuntimeData/同步器擴充功能/c
 
 test("同步器以最前方獨立欄位顯示網站原始項次", () => {
   assert.match(html, /<th>項次<\/th><th>投注內容<\/th>/);
+  assert.match(html, /<col style="width:52px"><col>/);
+  assert.match(html, /grid-template-columns:minmax\(48px,auto\)/);
   assert.match(html, /<td class="item-cell">\$\{b\.itemNumber\?escapeHtml\(b\.itemNumber\):''\}<\/td><td><b>/);
   assert.doesNotMatch(html, /itemBadge/);
   assert.match(html, /b\.betAmount,b\.itemNumber,b\.parseStatus/);
