@@ -20,15 +20,16 @@ test("同步器以最前方獨立欄位顯示網站原始項次", () => {
 test("擴充只從明細項次欄或同批 DOM 取得項次", () => {
   assert.match(extension, /function exactItemNumber/);
   assert.match(extension, /itemNumberFromOrderContext/);
-  assert.match(extension, /rowText\.includes\(date\)/);
+  assert.match(extension, /rowKey\.includes\(dateKey\)/);
   assert.match(extension, /exactItemNumber\(number\)/);
+  assert.match(extension, /itemNumber: directPillar\?\.itemNumber \?\? itemNumberFromOrderContext\(root, dateTime, play\)/);
 });
 
 test("項次必須與同一列的日期及原始玩法同時相符", () => {
   const exact = extension.match(/function exactItemNumber[\s\S]*?(?=\nfunction itemNumberFromOrderContext)/)?.[0];
   const lookup = extension.match(/function itemNumberFromOrderContext[\s\S]*?(?=\nfunction gameSectionFromText)/)?.[0];
   assert.ok(exact && lookup);
-  const row = { innerText: "43 三星連柱碰 2026-08-28 20:11:23" };
+  const row = { innerText: "43 三星連柱碰 2026-08-28\n20:11:23" };
   const cell = { innerText: "43", closest: () => row };
   const root = { querySelectorAll: () => [cell] };
   const context = {};
