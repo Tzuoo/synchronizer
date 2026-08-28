@@ -53,3 +53,10 @@ test("喜與風雲共用表頭解析但網站來源不可混用", () => {
   assert.match(source, /SITE_NAMES\[domain\]/);
   assert.match(background, /row\.gameName, row\.phaseName, row\.playType/);
 });
+
+test("航海使用已確認的 A07 路由並保留網站回傳玩法順序", () => {
+  assert.match(content, /"umh693\.com", "pee688\.com"/);
+  assert.match(content, /return `\$\{location\.origin\}\$\{prefix\}\/Front\/A\/A07`/);
+  assert.match(background, /\.map\(\(row, sourceOrder\) =>/);
+  assert.match(background, /root: domain, sourceOrder/);
+});

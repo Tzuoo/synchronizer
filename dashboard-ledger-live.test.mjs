@@ -15,3 +15,10 @@ test("live ledger keeps original game and play hierarchy", () => {
   assert.match(html, /row\.playType/);
   assert.match(html, /尚未回報或解析失敗的網站不列為 0/);
 });
+
+test("live ledger order is stable and does not follow polling timestamps", () => {
+  assert.match(html, /function ledgerRowCompare/);
+  assert.match(html, /const orderedRows=\[\.\.\.rows\]\.sort\(ledgerRowCompare\)/);
+  assert.match(html, /Number\(a\.sourceOrder\)/);
+  assert.doesNotMatch(html, /updatedAt.*sort|sort.*updatedAt/);
+});
