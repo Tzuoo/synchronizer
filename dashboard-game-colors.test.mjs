@@ -16,6 +16,16 @@ test("539 與六合使用固定且不同的盤口顏色", () => {
   assert.match(html, /\.game-tag\.game-539/);
   assert.match(html, /\.game-tag\.game-six/);
   assert.match(html, /bet-\$\{gameClass\}/);
+  assert.match(html, /\.bet-game-539 td\{background:/);
+  assert.match(html, /\.bet-game-six td\{background:/);
+  assert.match(html, /\.ledger-game\.game-539\{background:/);
+  assert.match(html, /\.ledger-game\.game-six\{background:/);
+});
+
+test("盤口整列底色不會蓋掉已對帳與已刪單狀態", () => {
+  assert.match(html, /\.bet-game-539\.reconciled-row td/);
+  assert.match(html, /\.bet-game-six\.reconciled-row td/);
+  assert.match(html, /\.bet-game-539\.deleted-row td,\.bet-game-six\.deleted-row td/);
 });
 
 test("總帳固定 539 在六合前且其他盤口仍穩定排列", () => {
