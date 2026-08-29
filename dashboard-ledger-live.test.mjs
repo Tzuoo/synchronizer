@@ -22,3 +22,9 @@ test("live ledger order is stable and does not follow polling timestamps", () =>
   assert.match(html, /Number\(a\.sourceOrder\)/);
   assert.doesNotMatch(html, /updatedAt.*sort|sort.*updatedAt/);
 });
+
+test("總帳固定 539 在六合之前", () => {
+  assert.match(html, /value==='539'\?0:value==='六合'\?1:2/);
+  assert.match(html, /gameOrder=.*\.sort\(gameDisplayCompare\)/);
+  assert.match(html, /games=.*\.sort\(gameDisplayCompare\)/);
+});
