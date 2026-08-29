@@ -7,7 +7,7 @@ const content = await readFile(new URL("../RuntimeData/同步器擴充功能/con
 const background = await readFile(new URL("../RuntimeData/同步器擴充功能/background.js", import.meta.url), "utf8");
 const pageHook = await readFile(new URL("../RuntimeData/同步器擴充功能/page-hook.js", import.meta.url), "utf8");
 const manifest = JSON.parse(await readFile(new URL("../RuntimeData/同步器擴充功能/manifest.json", import.meta.url), "utf8"));
-const source = content.match(/function scrapeSharedLedger[\s\S]*?(?=\nfunction storeLedgerSnapshot)/)?.[0];
+const source = content.match(/function normalizeLedgerPhaseName[\s\S]*?(?=\nfunction storeLedgerSnapshot)/)?.[0];
 assert.ok(source, "同型總帳解析器必須存在");
 
 const node = value => ({ innerText: value, textContent: value });
@@ -45,8 +45,8 @@ test("風雲同型總帳依網站原始遊戲分區保存", () => {
   const rows = context.scrape({ querySelector: selector => selector === "#ledger_01" ? ledger : null }, new Date("2026-08-28T00:00:00Z"));
   assert.equal(rows.length, 2, "沒有玩法的加拿大彩列不可以當成已確認的 0");
   assert.deepEqual(JSON.parse(JSON.stringify(rows.map(row => [row.gameName, row.phaseName, row.playType, row.totalAmount, row.winningAmount]))), [
-    ["六合", "第S590期", "台號", 4500, 1720.0000762939],
-    ["539", "第C115209期", "正碼", 3000, 600],
+    ["六合", "S590", "台號", 4500, 1720.0000762939],
+    ["539", "C115209", "正碼", 3000, 600],
   ]);
 });
 

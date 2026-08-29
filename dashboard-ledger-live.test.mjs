@@ -18,7 +18,7 @@ test("live ledger keeps original game and play hierarchy", () => {
 
 test("live ledger order is stable and does not follow polling timestamps", () => {
   assert.match(html, /function ledgerRowCompare/);
-  assert.match(html, /const orderedRows=\[\.\.\.rows\]\.sort\(ledgerRowCompare\)/);
+  assert.match(html, /const orderedRows=\[\.\.\.uniqueRows\]\.sort\(ledgerRowCompare\)/);
   assert.match(html, /Number\(a\.sourceOrder\)/);
   assert.doesNotMatch(html, /updatedAt.*sort|sort.*updatedAt/);
 });

@@ -55,6 +55,24 @@ test("同秒兩筆真正相同的明細仍依出現次數保留", () => {
   assert.ok(result.every(bet => bet.ids.length === 2));
 });
 
+test("風雲 539 表格與 gateway 名稱格式不同仍只保留網站兩批", () => {
+  const base = {
+    source: "風雲", account: "a0593", event: "三星", stake: 1000,
+    potentialPayout: 1000, unitAmount: 1000, combinationCount: 1,
+    carCount: null, betAmount: 1000, status: "待結算", reconciled: false,
+  };
+  const rows = [
+    { ...base, id: "vs968.net|a0593|table|2", placedAt: "2026-08-29T19:58:44+08:00", event: "539 / 三星單碰", playType: "三星單碰", selection: "三星單碰 visibility visibility_off 27, 28, 29 點 此畫面不注內容", itemNumber: "2" },
+    { ...base, id: "vs968.net|a0593|gateway|2", placedAt: "2026-08-29T19:58:44+08:00", playType: "三星", selection: "27&28&29" },
+    { ...base, id: "vs968.net|a0593|table|1", placedAt: "2026-08-29T19:58:40+08:00", event: "539 / 三星單碰", playType: "三星單碰", selection: "三星單碰 visibility visibility_off 27, 28, 29 點 此畫面不注內容", itemNumber: "1" },
+    { ...base, id: "vs968.net|a0593|gateway|1", placedAt: "2026-08-29T19:58:40+08:00", playType: "三星", selection: "27&28&29" },
+  ];
+  const result = context.dedupeExactBets(rows);
+  assert.equal(result.length, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(result.map(row => row.itemNumber))), ["2", "1"]);
+  assert.ok(result.every(row => row.ids.length === 2));
+});
+
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
   const base = {
     source: "喜", account: "a0593", placedAt: "2026-08-26T20:26:43+08:00",
