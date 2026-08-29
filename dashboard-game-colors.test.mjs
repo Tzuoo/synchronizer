@@ -28,6 +28,12 @@ test("盤口整列底色不會蓋掉已對帳與已刪單狀態", () => {
   assert.match(html, /\.bet-game-539\.deleted-row td,\.bet-game-six\.deleted-row td/);
 });
 
+test("手機盤口標題不套用項次絕對定位而獨立佔滿一列", () => {
+  assert.match(html, /tbody tr\.game-section-row\{display:block!important;position:static/);
+  assert.match(html, /tbody tr\.game-section-row td:first-child\{display:block!important;position:static;width:100%!important/);
+  assert.match(html, /tbody tr\.game-section-row td:first-child::after\{content:none\}/);
+});
+
 test("總帳固定 539 在六合前且其他盤口仍穩定排列", () => {
   const games = ["六合", "大樂", "539", "加州彩"].sort(context.gameDisplayCompare);
   assert.deepEqual(JSON.parse(JSON.stringify(games)), ["539", "六合", "大樂", "加州彩"]);
