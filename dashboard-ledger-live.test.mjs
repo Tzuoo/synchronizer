@@ -28,3 +28,20 @@ test("總帳固定 539 在六合之前", () => {
   assert.match(html, /gameOrder=.*\.sort\(gameDisplayCompare\)/);
   assert.match(html, /games=.*\.sort\(gameDisplayCompare\)/);
 });
+
+test("總帳玩法固定依正碼車二三四星排序", () => {
+  assert.match(html, /play==='正碼'\)return 0/);
+  assert.match(html, /play==='車'\|\|play==='全車'\)return 1/);
+  assert.match(html, /play==='二星'\)return 2/);
+  assert.match(html, /play==='三星'\)return 3/);
+  assert.match(html, /play==='四星'\)return 4/);
+  assert.match(html, /rows\]\.sort\(ledgerPlayCompare\)/);
+});
+
+test("跨站總帳每個玩法顯示各站加總過程", () => {
+  assert.match(html, /totalParts:\[\],winningParts:\[\]/);
+  assert.match(html, /current\.totalParts\.push\(totalAmount\)/);
+  assert.match(html, /values\.map\(ledgerMoney\)\.join\(' ＋ '\).*ledgerMoney\(total\)/);
+  assert.match(html, /ledgerEquation\(row\.totalParts,row\.totalAmount\)/);
+  assert.match(html, /ledgerEquation\(row\.winningParts,row\.winningAmount\)/);
+});
