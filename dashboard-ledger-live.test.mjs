@@ -41,7 +41,9 @@ test("總帳玩法固定依正碼車二三四星排序", () => {
 test("跨站總帳每個玩法顯示各站加總過程", () => {
   assert.match(html, /totalParts:\[\],winningParts:\[\]/);
   assert.match(html, /current\.totalParts\.push\(totalAmount\)/);
-  assert.match(html, /values\.map\(ledgerMoney\)\.join\(' ＋ '\).*ledgerMoney\(total\)/);
-  assert.match(html, /ledgerEquation\(row\.totalParts,row\.totalAmount\)/);
-  assert.match(html, /ledgerEquation\(row\.winningParts,row\.winningAmount\)/);
+  assert.match(html, /總量加總過程<\/th><th>總量<\/th><th class="ledger-equation-head">中獎加總過程<\/th><th>中獎/);
+  assert.match(html, /class="ledger-equation">\$\{ledgerEquation\(row\.totalParts,row\.totalAmount\)\}<\/td><td class="ledger-amount"/);
+  assert.match(html, /class="ledger-equation">\$\{ledgerEquation\(row\.winningParts,row\.winningAmount\)\}<\/td><td class="ledger-winning"/);
+  assert.match(html, /aggregateHtml=.*gameBlock\(game,'跨站合計'.*,true\)/);
+  assert.match(html, /\.ledger-equation\{min-width:220px/);
 });
