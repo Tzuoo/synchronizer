@@ -9,9 +9,11 @@ const extension = await readFile(new URL("../RuntimeData/同步器擴充功能/c
 test("同步器以最前方獨立欄位顯示網站原始項次", () => {
   assert.match(html, /<th>項次<\/th><th>投注內容<\/th>/);
   assert.match(html, /<col style="width:52px"><col>/);
-  assert.match(html, /position:relative;grid-template-columns:repeat\(3,minmax\(var\(--mobile-cell-width,104px\),1fr\)\)/);
+  assert.match(html, /position:relative;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(html, /tbody td:nth-child\(1\)\{position:absolute;top:10px;left:8px;width:40px!important/);
   assert.match(html, /tbody td:nth-child\(2\)\{grid-column:1\/-1;padding:0 0 7px 48px!important/);
+  assert.match(html, /tbody td:nth-child\(4\)\{grid-column:2\}/);
+  assert.match(html, /tbody td:nth-child\(5\)\{grid-column:1\/-1\}/);
   assert.match(html, /DEFAULT_COLUMN_WIDTHS=\[52,378,105,105,120,130,95,80\]/);
   assert.match(html, /saved\.length===8/);
   assert.match(html, /<td class="item-cell">\$\{b\.itemNumber\?escapeHtml\(b\.itemNumber\):''\}<\/td><td><b>/);
