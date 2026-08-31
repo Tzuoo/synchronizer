@@ -47,6 +47,7 @@ test("跨站總帳每個玩法顯示各站加總過程", () => {
   assert.match(html, /aggregateHtml=.*gameBlock\(game,'跨站合計'.*,true\)/);
   assert.match(html, /\.ledger-equation\.total-equation\{color:var\(--yellow\)\}/);
   assert.match(html, /\.ledger-equation\.winning-equation\{color:var\(--green\)\}/);
+  assert.match(html, /@media\(max-width:800px\)\{\.ledger-table \.ledger-winning\{color:var\(--green\)!important\}\}/);
   assert.match(html, /\.ledger-table\.with-equations\{display:block!important;min-width:0!important\}/);
   assert.match(html, /\.ledger-table\.with-equations tbody tr\{display:grid!important/);
   assert.match(html, /\.ledger-table th,\.ledger-table td\{display:table-cell!important;position:static!important/);
