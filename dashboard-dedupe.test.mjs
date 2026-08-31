@@ -73,6 +73,30 @@ test("風雲 539 表格與 gateway 名稱格式不同仍只保留網站兩批", 
   assert.ok(result.every(row => row.ids.length === 2));
 });
 
+test("風雲 539 正碼與 gateway 全車同一批只保留網站原始正碼", () => {
+  const base = {
+    source: "風雲", account: "a0593", placedAt: "2026-08-31T18:13:45+08:00",
+    potentialPayout: 0, unitAmount: null, combinationCount: null,
+    status: "待結算", reconciled: false,
+  };
+  const rows = [
+    { ...base, id: "vs968.net|a0593|table|1|15", event: "539 / 正碼", playType: "正碼", selection: "正碼 15", itemNumber: "1", stake: 3800, betAmount: 3800 },
+    { ...base, id: "vs968.net|a0593|table|1|16", event: "539 / 正碼", playType: "正碼", selection: "正碼 16", itemNumber: "1", stake: 1140, betAmount: 1140 },
+    { ...base, id: "vs968.net|a0593|table|1|24", event: "539 / 正碼", playType: "正碼", selection: "正碼 24", itemNumber: "1", stake: 1140, betAmount: 1140 },
+    { ...base, id: "vs968.net|a0593|gateway|1|15", event: "全車", playType: "全車", selection: "15", stake: 3800, betAmount: 3800, carCount: 3800 },
+    { ...base, id: "vs968.net|a0593|gateway|1|16", event: "全車", playType: "全車", selection: "16", stake: 1140, betAmount: 1140, carCount: 1140 },
+    { ...base, id: "vs968.net|a0593|gateway|1|24", event: "全車", playType: "全車", selection: "24", stake: 1140, betAmount: 1140, carCount: 1140 },
+  ];
+  const result = context.dedupeExactBets(rows);
+  assert.equal(result.length, 3);
+  assert.deepEqual(Array.from(result, row => [row.playType, row.selection, row.stake, row.itemNumber]), [
+    ["正碼", "正碼 15", 3800, "1"],
+    ["正碼", "正碼 16", 1140, "1"],
+    ["正碼", "正碼 24", 1140, "1"],
+  ]);
+  assert.ok(result.every(row => row.ids.length === 2));
+});
+
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
   const base = {
     source: "喜", account: "a0593", placedAt: "2026-08-26T20:26:43+08:00",
