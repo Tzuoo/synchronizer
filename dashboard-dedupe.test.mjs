@@ -7,7 +7,7 @@ const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
 const source = html.match(/function isDeletedBet[\s\S]*?(?=\nfunction displayBets)/)?.[0];
 assert.ok(source, "dashboard dedupe functions must be present");
 const context = {};
-vm.runInNewContext(`${source};globalThis.dedupeExactBets=dedupeExactBets`, context);
+vm.runInNewContext(`${source};globalThis.dedupeExactBets=dedupeExactBets;globalThis.collapseWindNumberBatches=collapseWindNumberBatches`, context);
 
 function wind(id, selection) {
   return {
@@ -95,6 +95,11 @@ test("風雲 539 正碼與 gateway 全車同一批只保留網站原始正碼", 
     ["正碼", "正碼 24", 1140, "1"],
   ]);
   assert.ok(result.every(row => row.ids.length === 2));
+  const batches = context.collapseWindNumberBatches(result);
+  assert.equal(batches.length, 1);
+  assert.equal(batches[0].itemNumber, "1");
+  assert.equal(batches[0].stake, 6080);
+  assert.deepEqual(Array.from(batches[0]._windDetails, detail => [detail.number, detail.amount]), [["15", 3800], ["16", 1140], ["24", 1140]]);
 });
 
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
