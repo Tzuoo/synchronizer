@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const version = JSON.parse(await readFile(new URL("./version.json", import.meta.url), "utf8"));
 
 test("網頁顯示最新版、需更新與離線狀態", () => {
   assert.match(html, /id="clientMonitor"/);
@@ -16,4 +17,7 @@ test("網頁顯示最新版、需更新與離線狀態", () => {
   assert.match(html, /synchronizerMobileMetaHiddenV1/);
   assert.match(html, /隱藏時間／網站／帳號/);
   assert.match(html, /body\.mobile-meta-hidden #betsTable tbody tr:not\(\.game-section-row\) td:nth-child\(6\)/);
+  assert.equal(html.match(/const BUILD="(\d+)"/)?.[1], String(version.build));
+  assert.equal(html.match(/<style>/g)?.length, 1);
+  assert.match(html, /<\/style><\/head><body>/);
 });
