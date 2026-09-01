@@ -4,6 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 
 const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const extension = await readFile(new URL("../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
 const source = html.match(/function isDeletedBet[\s\S]*?(?=\nfunction displayBets)/)?.[0];
 assert.ok(source, "dashboard dedupe functions must be present");
 const context = {};
@@ -74,15 +75,17 @@ test("風雲 539 表格與 gateway 名稱格式不同仍只保留網站兩批", 
 });
 
 test("風雲 539 正碼與 gateway 全車同一批只保留網站原始正碼", () => {
+  assert.match(extension, /const carCount = numeric\(text\(row, "\.col-unit"\)\)/);
+  assert.match(extension, /carCount: carCount > 0 \? carCount : null/);
   const base = {
     source: "風雲", account: "a0593", placedAt: "2026-08-31T18:13:45+08:00",
     potentialPayout: 0, unitAmount: null, combinationCount: null,
     status: "待結算", reconciled: false,
   };
   const rows = [
-    { ...base, id: "vs968.net|a0593|table|1|15", event: "539 / 正碼", playType: "正碼", selection: "正碼 15", itemNumber: "1", stake: 3800, betAmount: 3800 },
-    { ...base, id: "vs968.net|a0593|table|1|16", event: "539 / 正碼", playType: "正碼", selection: "正碼 16", itemNumber: "1", stake: 1140, betAmount: 1140 },
-    { ...base, id: "vs968.net|a0593|table|1|24", event: "539 / 正碼", playType: "正碼", selection: "正碼 24", itemNumber: "1", stake: 1140, betAmount: 1140 },
+    { ...base, id: "vs968.net|a0593|table|1|15", event: "539 / 正碼", playType: "正碼", selection: "正碼 15", itemNumber: "1", stake: 3800, betAmount: 3800, carCount: 1 },
+    { ...base, id: "vs968.net|a0593|table|1|16", event: "539 / 正碼", playType: "正碼", selection: "正碼 16", itemNumber: "1", stake: 1140, betAmount: 1140, carCount: 0.3 },
+    { ...base, id: "vs968.net|a0593|table|1|24", event: "539 / 正碼", playType: "正碼", selection: "正碼 24", itemNumber: "1", stake: 1140, betAmount: 1140, carCount: 0.3 },
     { ...base, id: "vs968.net|a0593|gateway|1|15", event: "全車", playType: "全車", selection: "15", stake: 3800, betAmount: 3800, carCount: 3800 },
     { ...base, id: "vs968.net|a0593|gateway|1|16", event: "全車", playType: "全車", selection: "16", stake: 1140, betAmount: 1140, carCount: 1140 },
     { ...base, id: "vs968.net|a0593|gateway|1|24", event: "全車", playType: "全車", selection: "24", stake: 1140, betAmount: 1140, carCount: 1140 },
@@ -99,7 +102,9 @@ test("風雲 539 正碼與 gateway 全車同一批只保留網站原始正碼", 
   assert.equal(batches.length, 1);
   assert.equal(batches[0].itemNumber, "1");
   assert.equal(batches[0].stake, 6080);
-  assert.deepEqual(Array.from(batches[0]._windDetails, detail => [detail.number, detail.amount]), [["15", 3800], ["16", 1140], ["24", 1140]]);
+  assert.deepEqual(Array.from(batches[0]._windDetails, detail => [detail.number, detail.amount, detail.carCount]), [["15", 3800, 1], ["16", 1140, 0.3], ["24", 1140, 0.3]]);
+  assert.match(html, /x\.carCount==null\?'未辨識'/);
+  assert.doesNotMatch(html, /isWindNumberBatch\)\?detailRows\.map\(x=>[^\n]*money\(x\.amount\)/);
 });
 
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
