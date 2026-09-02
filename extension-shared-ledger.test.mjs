@@ -108,7 +108,7 @@ test("共版 Vuex 總帳保留網站原始盤口期數玩法與順序", async ()
       documentElement: { dataset: {} },
     },
     location: { hostname: "www.vs968.net" },
-    window: { postMessage: message => { posted = message; } },
+    window: { postMessage: message => { if (message.type === 'SYNC_SHARED_LEDGER_ROWS') posted = message; } },
   };
   vm.runInNewContext(`${functions};globalThis.poll=pollSharedLedger`, sharedContext);
   await sharedContext.poll();
