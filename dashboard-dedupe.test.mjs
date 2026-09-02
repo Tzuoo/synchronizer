@@ -10,6 +10,22 @@ assert.ok(source, "dashboard dedupe functions must be present");
 const context = {};
 vm.runInNewContext(`${source};globalThis.dedupeExactBets=dedupeExactBets;globalThis.collapseWindNumberBatches=collapseWindNumberBatches`, context);
 
+test('喜特殊包牌兩組完整一致才跨來源一對一配對，保留網站名稱', () => {
+  const base = { source: '喜', account: 'test', placedAt: '2026-09-02T18:11:34+08:00', betAmount: 23800, status: '待結算' };
+  const dom = { ...base, id: 'kd998.net|kd-batch|F-test|1', itemNumber: '1', playType: '特殊包牌', event: '特殊包牌', selection: '特殊包牌｜visibility visibility_off 連二星:\n01,02,03\n04,06\n組三星:\n05,15,25,35｜下注金額 23800' };
+  const gateway = { ...base, id: 'kd998.net|kd-gateway-batch|1', playType: '三星', event: '三星', selection: '三星｜1~2~3~4~6&5~15~25~35｜下注金額 23800｜車數 未辨識' };
+  for (const rows of [[dom, gateway], [gateway, dom]]) {
+    const result = context.dedupeExactBets(rows);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].playType, '特殊包牌');
+    assert.equal(result[0].itemNumber, '1');
+  }
+  assert.equal(context.dedupeExactBets([dom, { ...dom, id: 'kd998.net|kd-batch|F-test|2' }, gateway, { ...gateway, id: 'kd998.net|kd-gateway-batch|2' }]).length, 2);
+  for (const changed of [{ account: 'other' }, { betAmount: 23801 }, { status: '已刪單' }, { placedAt: '2026-09-02T18:11:35+08:00' }, { selection: gateway.selection.replace('25~35','35~25') }, { selection: gateway.selection.replace('1~2~3','1~3~2') }]) {
+    assert.equal(context.dedupeExactBets([dom, { ...gateway, ...changed }]).length, 2);
+  }
+});
+
 function wind(id, selection) {
   return {
     id,

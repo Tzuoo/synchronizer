@@ -8,6 +8,14 @@ const source = html.match(/function escapeHtml[\s\S]*?(?=\nfunction isDeletedBet
 assert.ok(source, "structured selection functions must be present");
 const context = { money: (value) => `$${Number(value).toLocaleString("en-US")}` };
 vm.runInNewContext(`${source};globalThis.formatStructuredSelection=formatStructuredSelection`, context);
+
+test('喜特殊包牌完整保留第二組號碼，不套車數格式或顯示圖示文字', () => {
+  const output = context.formatStructuredSelection('特殊包牌', '特殊包牌｜visibility visibility_off 連二星:\n01,02,03\n組三星:\n05,15,25,35｜下注金額 23800', { source: '喜' });
+  assert.match(output, /連二星:/);
+  assert.match(output, /組三星:/);
+  assert.match(output, /05,15,25,35/);
+  assert.doesNotMatch(output, /visibility|未辨識|下注金額/);
+});
 const suppressionSource = html.match(/function suppressKdLegacyRows[\s\S]*?(?=\nfunction displayBets)/)?.[0];
 assert.ok(suppressionSource, "kd legacy suppression must be present");
 vm.runInNewContext(`${suppressionSource};globalThis.suppressKdLegacyRows=suppressKdLegacyRows`, context);
