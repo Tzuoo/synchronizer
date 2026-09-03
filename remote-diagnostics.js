@@ -2,7 +2,7 @@
 let remoteDiagnosticRows = [], remoteDiagnosticBusy = false;
 const diagnosticStageNames = { frame:'工作框', read:'背景抓取', parse:'明細解析', upload:'明細上傳', ledger:'總帳抓取', ledgerUpload:'總帳上傳', heartbeat:'連線心跳' };
 const diagnosticCodeNames = { OK:'成功', EMPTY:'回應為 0 筆，需對照網站', WAIT_REQUEST:'等待開啟一次下注明細', WAIT_FRAME:'尚未偵測到網站工作框', READ_FAILED:'讀取失敗（連線或網站請求）', PARSE_FAILED:'解析失敗', UPLOAD_FAILED:'上傳失敗', LEDGER_FAILED:'總帳請求失敗', HTTP_401:'驗證失效（HTTP 401）', HTTP_403:'存取遭拒（HTTP 403）', HTTP_429:'請求過於頻繁（HTTP 429）', HTTP_5XX:'伺服器錯誤（HTTP 5xx）' };
-const diagnosticSiteNames = { 'vs968.net':'風雲', 'kd998.net':'喜', 'hyp98.com':'98', '188hot.net':'16', 'umh693.com':'海勝', 'pee688.com':'航海', 'bnd139.com':'28' };
+const diagnosticSiteNames = { 'vs968.net':'風雲', 'kd998.net':'喜', 'hyp98.com':'98', '188hot.net':'16', 'umh693.com':'海勝', 'and539.com':'海勝2', 'pee688.com':'航海', 'bnd139.com':'28' };
 function remoteDeviceLabel(id) {
   const latest = remoteDiagnosticRows.filter(row => row.installationId === id).sort((a,b) => String(b.reportedAt).localeCompare(String(a.reportedAt)))[0];
   return `${latest?.deviceLabel || '未命名裝置'} · ${String(id).slice(-8)}`;

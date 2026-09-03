@@ -63,8 +63,8 @@ test('共用背景框架只建立一次，明細與總帳名稱和 URL 不互相
 });
 
 test('A06/A07 路由白名單、動態登入前綴與總帳刷新保持原行為', () => {
-  const a06 = ['hyp98.com', 'kd998.net', 'cj3688.com', '188hot.net', 'bnd139.com', 'umh693.com', 'amc283.com', 'pee688.com'];
-  const a07 = ['hyp98.com', '188hot.net', 'bnd139.com', 'umh693.com', 'pee688.com'];
+  const a06 = ['hyp98.com', 'kd998.net', 'cj3688.com', '188hot.net', 'bnd139.com', 'umh693.com', 'and539.com', 'amc283.com', 'pee688.com'];
+  const a07 = ['hyp98.com', '188hot.net', 'bnd139.com', 'umh693.com', 'and539.com', 'pee688.com'];
   for (const site of [...new Set([...a06, 'vs968.net', 'sk6688.net', 'unknown.test'])]) {
     const { context: c } = harness('w1.' + site);
     const prefix = 'https://w1.' + site + '/current-session/Front/A/';

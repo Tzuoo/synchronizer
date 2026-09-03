@@ -12,7 +12,7 @@ vm.runInNewContext(`${source};globalThis.formatStructuredSelection=formatStructu
 test('無標籤長號碼跨完整欄寬，連柱碰保留全部號碼及獨立碰撞組', () => {
   assert.match(html, /\.pillar-line\s*>\s*\.pillar-values:only-child\s*\{\s*grid-column:1\/-1\s*\}/);
   const numbers = '01, 02, 03, 04, 06, 07, 08, 09, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39';
-  for (const source of ['98', '16', '28', '海勝', '航海']) {
+  for (const source of ['98', '16', '28', '海勝', '海勝2', '航海']) {
     const result = context.formatStructuredSelection('三星連柱碰', `${numbers}、碰 05, 15, 25, 35`, { source });
     assert.ok(result.includes(`<span class="pillar-values">${numbers}</span>`));
     assert.match(result, /pillar-label">碰<\/span><span class="pillar-values">05, 15, 25, 35/);

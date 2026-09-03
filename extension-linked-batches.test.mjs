@@ -15,12 +15,14 @@ function page(status = '(已刪單)', play = '三星', item = '3') {
   const batch = `${item} ${play}\n連柱碰\n2026-09-02\n18:12:15\n${status}\n${numbers}\n碰\n05,15,25,35 570 62.6 10 2380 23800 0 -243.95 8657.25 15142.75\n新增備註 單項金額總計 23800 0 -243.95 8657.25 15142.75`;
   return { body: { innerText: `【539】 第 C115213 期\n${batch}` }, querySelectorAll: selector => selector === 'td,th' ? [{ innerText: item, closest: () => ({ innerText: batch }) }] : [] };
 }
-for (const host of ['hyp98.com', '188hot.net', 'bnd139.com', 'umh693.com']) {
+for (const host of ['hyp98.com', '188hot.net', 'bnd139.com', 'umh693.com', 'and539.com']) {
   test(`${host} 連柱碰保留原名、完整兩組、原始碰數及刪單`, () => {
     const scope = context(host);
-    const parse = host === 'umh693.com' ? scope.scrapeUmhOrders : scope.scrape188Orders;
+    const parse = ['umh693.com', 'and539.com'].includes(host) ? scope.scrapeUmhOrders : scope.scrape188Orders;
     const rows = parse(page());
     assert.equal(rows.length, 1);
+    if (host === 'and539.com') assert.equal(rows[0].source, '海勝2');
+    if (host === 'umh693.com') assert.equal(rows[0].source, '海勝');
     assert.equal(rows[0].playType, '三星連柱碰');
     assert.equal(rows[0].event, '539 / 三星連柱碰');
     assert.equal(rows[0].itemNumber, '3');
