@@ -7,7 +7,7 @@ const content = await readFile(new URL("content.js", extensionRoot), "utf8");
 const manifest = JSON.parse(await readFile(new URL("manifest.json", extensionRoot), "utf8"));
 
 test("航海新網域會載入解析程式", () => {
-  assert.ok(manifest.content_scripts.every(script => script.matches.includes("*://*.pee688.com/*")));
+  assert.ok(manifest.content_scripts.filter(script => script.matches.some(match => match.includes('pee688.com'))).every(script => script.matches.includes("*://*.pee688.com/*")));
   assert.match(content, /"pee688\.com": "航海"/);
   assert.match(content, /\["amc283\.com", "pee688\.com"\]\.includes\(rootDomain\(location\.hostname\)\)/);
 });

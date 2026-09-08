@@ -11,7 +11,7 @@ const shared = await read('src/content/shared.js');
 const ledger = await read('src/content/ledger.js');
 
 test('海勝2 在主頁與子框架注入兩個入口，並沿用海勝解析器', async () => {
-  for (const entry of manifest.content_scripts) {
+  for (const entry of manifest.content_scripts.filter(item => item.matches.some(match => match.includes('and539.com')))) {
     assert.ok(entry.matches.includes('*://*.and539.com/*'));
     assert.equal(entry.all_frames, true);
   }

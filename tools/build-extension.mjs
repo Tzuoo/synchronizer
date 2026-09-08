@@ -16,6 +16,7 @@ export const contentParts = Object.freeze([
   'ledger.js',
   'sync.js',
   'frames.js',
+  'full-car.js',
 ]);
 
 export async function composeContent(root = extensionRoot) {
