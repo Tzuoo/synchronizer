@@ -22,6 +22,7 @@ test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致',
   assert.match(ui, /總和大[^\n]+>6/);
   assert.match(ui, /總和小[^\n]+<=6/);
   assert.match(ui, /state\.orders=\[\];resetSelection\(\);resetEntry\(\);state\.plan=null/);
+  assert.match(html, /<script src="full-car-dashboard\.js\?build=73"><\/script>/);
 });
 
 test('網頁橋接限正式網址與加入清單命令，不存在送出注單命令', () => {
