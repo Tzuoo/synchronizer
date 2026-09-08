@@ -1,5 +1,5 @@
 (() => {
-  const state = { orders: [], selected: new Set(), plan: null };
+  const state = { orders: [], selected: new Set(), activeQuickKey: '', plan: null };
   const byId = id => document.getElementById(id);
   const requestExtension = (type, payload = {}) => new Promise((resolve, reject) => {
     const requestId = crypto.randomUUID();
@@ -37,24 +37,33 @@
     '大': Array.from({length:20},(_,i)=>i+20), '小': Array.from({length:19},(_,i)=>i+1), '全': Array.from({length:39},(_,i)=>i+1),
     '總和單': Array.from({length:39},(_,i)=>i+1).filter(n=>(Math.floor(n/10)+n%10)%2),
     '總和雙': Array.from({length:39},(_,i)=>i+1).filter(n=>(Math.floor(n/10)+n%10)%2===0),
-    '總和大': Array.from({length:39},(_,i)=>i+1).filter(n=>Math.floor(n/10)+n%10>=10),
-    '總和小': Array.from({length:39},(_,i)=>i+1).filter(n=>Math.floor(n/10)+n%10<10)
+    '總和大': Array.from({length:39},(_,i)=>i+1).filter(n=>Math.floor(n/10)+n%10>6),
+    '總和小': Array.from({length:39},(_,i)=>i+1).filter(n=>Math.floor(n/10)+n%10<=6)
   };
-  function toggleNumbers(numbers) {
-    const normalized = numbers.map(n => String(n).padStart(2, '0'));
-    const remove = normalized.every(number => state.selected.has(number));
-    normalized.forEach(number => remove ? state.selected.delete(number) : state.selected.add(number));
+  function switchQuickSelection(key) {
+    const nextKey = state.activeQuickKey === key ? '' : key;
+    state.activeQuickKey = nextKey;
+    state.selected.clear();
+    (ranges[nextKey] || []).forEach(number => state.selected.add(String(number).padStart(2, '0')));
     refreshQuickButtons();
   }
   function refreshQuickButtons() {
     document.querySelectorAll('[data-quick-key]').forEach(button => {
-      const numbers = (ranges[button.dataset.quickKey] || []).map(n => String(n).padStart(2, '0'));
-      button.classList.toggle('selected', numbers.length > 0 && numbers.every(number => state.selected.has(number)));
+      button.classList.toggle('selected', button.dataset.quickKey === state.activeQuickKey);
     });
   }
   function buttons(host, labels, className = '') {
     host.innerHTML = labels.map(label => `<button type="button" data-quick-key="${label}" class="${className && label.includes('波') ? `wave-${label[0]==='紅'?'red':label[0]==='藍'?'blue':'green'}` : ''}">${label}</button>`).join('');
-    host.querySelectorAll('button').forEach(button => button.onclick = () => toggleNumbers(ranges[button.dataset.quickKey] || []));
+    host.querySelectorAll('button').forEach(button => button.onclick = () => switchQuickSelection(button.dataset.quickKey));
+  }
+  function resetEntry() {
+    byId('fullCarNumber').value = '';
+    byId('fullCarCars').value = '';
+    byId('fullCarNumber').focus();
+  }
+  function resetSelection() {
+    state.selected.clear(); state.activeQuickKey = ''; refreshQuickButtons();
+    byId('fullCarAddCars').value = '';
   }
   async function compare() {
     const display = byId('fullCarPlan'); state.plan = null; byId('fullCarAdd').disabled = true;
@@ -70,17 +79,25 @@
   }
   window.initFullCarDashboard = () => {
     if (byId('comparePanel')?.dataset.ready) return; byId('comparePanel').dataset.ready = '1';
-    buttons(byId('fullCarQuickButtons'), ['紅波','藍波','綠波','單','雙','大','小','全'], 'wave');
+    buttons(byId('fullCarWaves'), ['紅波','藍波','綠波'], 'wave');
+    buttons(byId('fullCarQuickButtons'), ['單','雙','大','小','全']);
     [0,1,2,3].forEach(n => ranges[`頭${n}`] = Array.from({length:39},(_,i)=>i+1).filter(v=>Math.floor(v/10)===n)); buttons(byId('fullCarTens'), [0,1,2,3].map(n=>`頭${n}`));
     for(let n=0;n<=9;n++)ranges[`尾${n}`]=Array.from({length:39},(_,i)=>i+1).filter(v=>v%10===n); buttons(byId('fullCarUnits'), Array.from({length:10},(_,n)=>`尾${n}`));
     buttons(byId('fullCarSums'), ['總和單','總和雙','總和大','總和小']);
-    const submitDirect = () => { try { addOrder(byId('fullCarNumber').value, byId('fullCarCars').value); byId('fullCarNumber').value=''; byId('fullCarNumber').focus(); } catch(error) { byId('fullCarPlan').textContent=error.message; byId('fullCarPlan').className='full-car-plan warn'; } };
-    [byId('fullCarNumber'),byId('fullCarCars')].forEach(input=>input.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();submitDirect()}}));
+    const submitDirect = () => { try { addOrder(byId('fullCarNumber').value, byId('fullCarCars').value); resetEntry(); } catch(error) { byId('fullCarPlan').textContent=error.message; byId('fullCarPlan').className='full-car-plan warn'; } };
+    byId('fullCarNumber').addEventListener('input', event => {
+      const value = event.target.value.replace(/\D/g, '').slice(0, 2); event.target.value = value;
+      if (value.length === 2 && Number(value) >= 1 && Number(value) <= 39) byId('fullCarCars').focus();
+    });
+    byId('fullCarNumber').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();byId('fullCarCars').focus()}});
+    byId('fullCarCars').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();submitDirect()}});
     byId('fullCarFastFocus').onclick=()=>byId('fullCarNumber').focus();
-    byId('fullCarApplyCars').onclick=()=>{const cars=readCars(byId('fullCarAddCars').value);if(!cars||!state.selected.size){byId('fullCarPlan').textContent='請先快速選號並輸入累加車數';byId('fullCarPlan').className='full-car-plan warn';return}[...state.selected].sort().forEach(number=>state.orders.push({number,cars}));state.selected.clear();refreshQuickButtons();state.plan=null;renderOrders()};
-    byId('fullCarClear').onclick=()=>{state.orders=[];state.selected.clear();refreshQuickButtons();state.plan=null;renderOrders();byId('fullCarPlan').textContent='請先輸入號碼與車數'};
+    const applySelectedCars=()=>{const cars=readCars(byId('fullCarAddCars').value);if(!cars||!state.selected.size){byId('fullCarPlan').textContent='請先快速選號並輸入累加車數';byId('fullCarPlan').className='full-car-plan warn';return}[...state.selected].sort().forEach(number=>state.orders.push({number,cars}));byId('fullCarAddCars').value='';state.activeQuickKey='';refreshQuickButtons();state.plan=null;renderOrders()};
+    byId('fullCarApplyCars').onclick=applySelectedCars;
+    byId('fullCarAddCars').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();applySelectedCars()}});
+    byId('fullCarClear').onclick=()=>{state.orders=[];resetSelection();resetEntry();state.plan=null;renderOrders();byId('fullCarPlan').textContent='請先輸入號碼與車數'};
     byId('fullCarCompare').onclick=compare;
-    byId('fullCarAdd').onclick=async()=>{if(!state.plan)return;byId('fullCarAdd').disabled=true;try{const response=await requestExtension('FULL_CAR_ADD_SEQUENCE',{targets:state.plan});if(!response.ok)throw new Error(response.error||'加入清單失敗');byId('fullCarPlan').textContent+='\n已加入各站左側清單；尚未送出注單。';state.plan=null}catch(error){byId('fullCarPlan').textContent=String(error?.message||error);byId('fullCarPlan').className='full-car-plan warn';byId('fullCarAdd').disabled=false}};
+    byId('fullCarAdd').onclick=async()=>{if(!state.plan)return;byId('fullCarAdd').disabled=true;try{const response=await requestExtension('FULL_CAR_ADD_SEQUENCE',{targets:state.plan});if(!response.ok)throw new Error(response.error||'加入清單失敗');state.orders=[];resetSelection();resetEntry();state.plan=null;renderOrders();byId('fullCarPlan').textContent='已加入各站左側清單；尚未送出注單。';byId('fullCarPlan').className='full-car-plan ok'}catch(error){byId('fullCarPlan').textContent=String(error?.message||error);byId('fullCarPlan').className='full-car-plan warn';byId('fullCarAdd').disabled=false}};
     renderOrders(); requestExtension('GET_FULL_CAR_REPORTS').then(r=>{byId('fullCarConnection').textContent=(r.reports||[]).filter(x=>['and539.com','bnd139.com'].includes(x.root)).length===2?'兩站已連線':'等待兩站全車頁'}).catch(()=>byId('fullCarConnection').textContent='本機擴充未連線');
   };
 })();

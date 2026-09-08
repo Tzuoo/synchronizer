@@ -9,8 +9,19 @@ const manifest = JSON.parse(await readFile(new URL('../RuntimeData/同步器擴�
 
 test('同步器網頁提供獨立比價頁與熟悉的快速選號工具', () => {
   assert.match(html, /id="compareTab"[^>]*>比價下單/);
-  for (const id of ['fullCarNumber','fullCarCars','fullCarQuickButtons','fullCarTens','fullCarUnits','fullCarSums','fullCarAddCars','fullCarApplyCars']) assert.match(html, new RegExp(`id="${id}"`));
+  for (const id of ['fullCarNumber','fullCarCars','fullCarWaves','fullCarQuickButtons','fullCarTens','fullCarUnits','fullCarSums','fullCarAddCars','fullCarApplyCars']) assert.match(html, new RegExp(`id="${id}"`));
   for (const label of ['紅波','藍波','綠波','單','雙','大','小','全','總和單','總和雙','總和大','總和小']) assert.ok(ui.includes(`'${label}'`));
+  assert.match(html, /id="fullCarWaves"[^>]*><\/div><div id="fullCarQuickButtons"/);
+});
+
+test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致', () => {
+  assert.match(ui, /value\.length === 2[^\n]+fullCarCars[^\n]+focus/);
+  assert.match(ui, /fullCarCars[^\n]+keydown[^\n]+submitDirect/);
+  assert.match(ui, /state\.activeQuickKey === key \? '' : key/);
+  assert.match(ui, /state\.selected\.clear\(\)/);
+  assert.match(ui, /總和大[^\n]+>6/);
+  assert.match(ui, /總和小[^\n]+<=6/);
+  assert.match(ui, /state\.orders=\[\];resetSelection\(\);resetEntry\(\);state\.plan=null/);
 });
 
 test('網頁橋接限正式網址與加入清單命令，不存在送出注單命令', () => {
