@@ -123,6 +123,26 @@ test("風雲 539 正碼與 gateway 全車同一批只保留網站原始正碼", 
   assert.doesNotMatch(html, /isWindNumberBatch\)\?detailRows\.map\(x=>[^\n]*money\(x\.amount\)/);
 });
 
+test("風雲特碼／特別號與台號的表格及 gateway 表示會一對一配對", () => {
+  const base = {
+    source: "風雲", account: "a0593", placedAt: "2026-09-08T20:07:51+08:00",
+    stake: 500, potentialPayout: 500, unitAmount: 500, combinationCount: null,
+    carCount: null, betAmount: 500, status: "待結算", reconciled: false,
+  };
+  const rows = [
+    { ...base, id: "vs968.net|a0593|table|3|02", event: "大樂 / 特碼", playType: "特碼", selection: "特碼 02", itemNumber: "3" },
+    { ...base, id: "vs968.net|a0593|gateway|30|1", event: "特別號", playType: "特別號", selection: "2" },
+    { ...base, id: "vs968.net|a0593|table|3|06", event: "大樂 / 特碼", playType: "特碼", selection: "特碼 06", itemNumber: "3" },
+    { ...base, id: "vs968.net|a0593|gateway|30|2", event: "特別號", playType: "特別號", selection: "6" },
+    { ...base, id: "vs968.net|a0593|table|2|36", placedAt: "2026-09-08T20:03:44+08:00", event: "大樂 / 台號", playType: "台號", selection: "台號 36", itemNumber: "2" },
+    { ...base, id: "vs968.net|a0593|gateway|29|2", placedAt: "2026-09-08T20:03:44+08:00", event: "台號", playType: "台號", selection: "36" },
+  ];
+  const result = context.dedupeExactBets(rows);
+  assert.equal(result.length, 3);
+  assert.deepEqual(Array.from(result, row => row.itemNumber), ["3", "3", "2"]);
+  assert.ok(result.every(row => row.ids.length === 2));
+});
+
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
   const base = {
     source: "喜", account: "a0593", placedAt: "2026-08-26T20:26:43+08:00",

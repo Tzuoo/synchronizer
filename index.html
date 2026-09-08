@@ -199,7 +199,10 @@ function dedupeExactBets(rows){
     const windPlay=play.replace(/^(?:539|大樂|六合)\s*[\/／-]\s*/,'').replace(/單碰$/,'').trim();
     const windNumbers=(selection.match(/(?<!\d)\d{1,2}(?!\d)/g)||[]).map(value=>String(Number(value)).padStart(2,'0')).join(',');
     const isWindNumberPlay=isWind&&!/^六合\s*[\/／-]/.test(String(b.event||''))&&/^[二三四五六七]星/.test(windPlay)&&windNumbers;
-    const isWindSingleNumberAlias=isWind&&!/^六合\s*[\/／-]/.test(String(b.event||''))&&/^(?:正碼|全車)$/.test(windPlay)&&/^\d{2}$/.test(windNumbers);
+    const windSingleAlias=/^(?:正碼|全車)$/.test(windPlay)?"正碼／全車"
+      :/^(?:特碼|特別號)$/.test(windPlay)?"特碼／特別號"
+      :windPlay==="台號"?"台號":"";
+    const isWindSingleNumberAlias=isWind&&windSingleAlias&&!/^六合\s*[\/／-]/.test(String(b.event||''))&&/^\d{2}$/.test(windNumbers);
     const windAmount=Number(b.betAmount)||Number(b.stake)||Number(b.potentialPayout)||0;
     const specialPackage=isKd?kdSpecialPackageKey(b):"";
     const key=specialPackage
@@ -209,7 +212,7 @@ function dedupeExactBets(rows){
       : isWindNumberPlay
         ? [b.source,b.account,second,windPlay,windNumbers,Number(b.betAmount)||0,isDeletedBet(b)].join("|")
       : isWindSingleNumberAlias
-        ? [b.source,b.account,second,"正碼／全車",windNumbers,windAmount,isDeletedBet(b)].join("|")
+        ? [b.source,b.account,second,windSingleAlias,windNumbers,windAmount,isDeletedBet(b)].join("|")
       : [b.source,b.account,second,b.event,b.playType,selection,b.stake,b.potentialPayout,b.unitAmount,b.combinationCount,b.carCount,b.betAmount,isDeletedBet(b)].join("|");
     const candidates=seen.get(key)||[];
     const existing=(isWind||isKd)
