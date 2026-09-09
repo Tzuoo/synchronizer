@@ -13,7 +13,7 @@ test('彈出視窗固定寬度，不受視窗寬度反饋影響', () => {
   for (const selector of ['html.popup-root', 'body.popup']) {
     const rule = declarations(selector);
     for (const property of ['width', 'min-width', 'max-width']) {
-      assert.ok(rule.split(';').includes(property + ':388px'));
+      assert.ok(rule.split(';').includes(property + ':300px'));
     }
     assert.doesNotMatch(rule, /vw|%/);
   }
@@ -22,9 +22,9 @@ test('彈出視窗固定寬度，不受視窗寬度反饋影響', () => {
   assert.ok(declarations('main').includes('max-width:calc(100vw - 48px)'));
 });
 
-test('長診斷只在彈窗內垂直捲動並可斷行', () => {
+test('彈窗內容過長時只在彈窗內垂直捲動並可斷行', () => {
   const body = declarations('body.popup');
-  assert.match(body, /max-height:560px/);
+  assert.match(body, /max-height:420px/);
   assert.match(body, /overflow-y:auto/);
   assert.match(body, /overflow-x:hidden/);
   assert.match(body, /overflow-wrap:anywhere/);
