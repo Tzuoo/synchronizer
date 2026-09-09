@@ -8,7 +8,7 @@
   demo.before(panel);
   const options = panel.querySelector('.ledger-calc-options');
   const result = panel.querySelector('.ledger-calc-result');
-  const saved = JSON.parse(localStorage.getItem('ledgerCalculatorSelection') || '{}');
+  const getSaved = () => JSON.parse(localStorage.getItem('ledgerCalculatorSelection') || '{}');
   const defaultDivisor = { '正碼': 5300, '全車': 5300, '二星': 5300, '三星': 57000 };
   const money = value => '$' + Math.round(Number(value) || 0).toLocaleString('en-US');
   const refresh = () => {
@@ -28,6 +28,7 @@
     if (!table) return;
     const rows = [...table.querySelectorAll('tbody tr')].map(row => [...row.cells].map(cell => cell.textContent.trim()));
     const data = rows.filter(cells => cells.length >= 5 && cells[0] !== '盤口小計').map(cells => ({ name: cells[0], total: Number(cells[2].replace(/[^0-9.-]/g, '')) || 0, winning: Number(cells[4].replace(/[^0-9.-]/g, '')) || 0 }));
+    const saved = getSaved();
     const old = new Map([...options.querySelectorAll('label')].map(label => [label.dataset.name, label.querySelector('input[type=number]').value]));
     options.replaceChildren(...data.map(row => { const label = document.createElement('label'); label.dataset.name = row.name; label.dataset.total = row.total; label.dataset.winning = row.winning; const prior = saved[row.name] || {}; const divisor = prior.divisor ?? old.get(row.name) ?? defaultDivisor[row.name] ?? ''; label.innerHTML = `<input type="checkbox" value="${row.name}"${prior.checked ? ' checked' : ''}> ${row.name} <input type="number" min="0" step="1" placeholder="除數" value="${divisor}">`; label.querySelector('input[type=checkbox]').addEventListener('change', refresh); label.querySelector('input[type=number]').addEventListener('input', refresh); return label; }));
     refresh();
