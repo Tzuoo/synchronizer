@@ -43,7 +43,7 @@ test('比價操作由同步器網頁橋接，彈窗不再保留重複介面', ()
 test('背景仍保留網頁所需的逐筆加入命令', () => {
   assert.match(background, /FULL_CAR_ADD_SEQUENCE/);
   assert.match(background, /for \(const target of message\.targets/);
-  assert.match(background, /目前沒有已開啟且可取得 539 全車報價的網站/);
+  assert.match(background, /目前沒有已開啟且可取得 \$\{game\} \$\{playType\} 報價的網站/);
   assert.doesNotMatch(background, /reports\.length !== 2/);
   assert.match(background, /QUOTE_PREFLIGHT/);
   assert.match(background, /QUOTE_ADD_CART/);
@@ -88,7 +88,43 @@ test('喜與風雲共用同型 Vuex 報價及暫存核心但保留網站名稱',
   assert.match(pageHook, /\(\?:vs968\|kd998\)\\\.net/);
   assert.match(pageHook, /root === 'kd998\.net' \? '喜' : '風雲'/);
   assert.match(source, /\['vs968\.net', 'kd998\.net'\]\.includes/);
-  assert.match(background, /quoteFrames\.has\(\[chosen\.report\.root, "539", "全車"\]/);
+  assert.match(background, /quoteFrames\.has\(\[chosen\.report\.root, game, playType\]/);
+});
+
+test('金好運天天樂全車依實際頁面標題辨識，並可用隱藏同源框架續讀報價', () => {
+  assert.match(source, /activeFullCarGame/);
+  assert.match(source, /\(\?:539\|天天樂\)\\s\*\[-－\]\\s\*全車/);
+  assert.match(source, /game: page\.game/);
+  assert.match(source, /SYNC_FULL_CAR_ROUTE/);
+  assert.match(source, /backgroundFullCarRoute = \{ game, url \};\s*\/\/ 第一次離開全車頁前立刻建立續讀框架[\s\S]*ensureBackgroundFullCar\(\)/);
+  assert.match(source, /data-sync-full-car/);
+  assert.match(source, /new MutationObserver/);
+  assert.match(source, /characterData: true/);
+  assert.match(source, /setTimeout\(reportFullCarPage, 120\)/);
+  assert.match(source, /rootDomain\(location\.hostname\) !== 'bnd139\.com'/);
+  assert.match(background, /const fullCarFrameKey/);
+  assert.match(background, /fullCarFrames\.set\(fullCarFrameKey\(report\)/);
+  assert.match(background, /game = String\(message\.game \|\| '539'\)/);
+  assert.match(background, /FULL_CAR_PREFLIGHT", root: target\.root, game: target\.game/);
+});
+
+test('金好運加入暫存一律改由可見全車工作頁確認左側清單，並可在同遊戲內自動跳轉', () => {
+  assert.match(source, /SYNC_BND_VISIBLE_FULL_CAR_COMMAND/);
+  assert.match(source, /window\.top !== window/);
+  assert.match(source, /bndVisibleFullCar/);
+  assert.match(source, /clickBndFullCarNavigation/);
+  assert.match(source, /waitForVisibleBndFullCar/);
+  assert.match(source, /網站未確認左側清單已更新，未回報加入成功/);
+  assert.match(source, /dataset\?\.syncFullCar/);
+  assert.match(source, /String\(element\.textContent \|\| element\.value \|\| ''\)\.trim\(\) === '全車'/);
+  assert.doesNotMatch(source, /=== '送出注單'/);
+});
+
+test('舊版網站框架沒有 randomUUID 時仍可建立訊息配對 ID', () => {
+  assert.match(source, /function createFullCarRequestId/);
+  assert.match(source, /typeof crypto\?\.randomUUID === 'function'/);
+  assert.match(source, /crypto\?\.getRandomValues/);
+  assert.doesNotMatch(source, /const requestId = crypto\.randomUUID\(\)/);
 });
 
 test('新增腳本可通過語法檢查', () => {
