@@ -59,6 +59,17 @@ test("風雲 gateway 與明細表格同一筆只保留一次", () => {
   assert.deepEqual(Array.from(result[0].ids), [rows[0].id, rows[2].id]);
 });
 
+test("風雲六合台號 gateway 與明細以號碼、金額及秒數一對一配對", () => {
+  const dom = { ...wind("vs968.net|a0593|table|6|61", "台號 61"), event: "六合 / 台號", playType: "台號", stake: 200, potentialPayout: 400, betAmount: 400, carCount: 2 };
+  const gateway = { ...wind("vs968.net|a0593|gateway|6|61", "61"), event: "六合 / S594 - 001", playType: "台號", stake: 200, potentialPayout: 200, betAmount: 200, carCount: null };
+  const duplicateDom = { ...dom, id: "vs968.net|a0593|table|6|61-duplicate" };
+  const duplicateGateway = { ...gateway, id: "vs968.net|a0593|gateway|7|61" };
+  const result = context.dedupeExactBets([dom, duplicateDom, gateway, duplicateGateway]);
+  assert.equal(result.length, 2, "真正同秒重複下注要保留兩筆");
+  assert.ok(result.every(row => row.ids.length === 2));
+  assert.ok(result.every(row => row.carCount === 2));
+});
+
 test("同秒兩筆真正相同的明細仍依出現次數保留", () => {
   const rows = [
     wind("vs968.net|a0593|table|0", "台號 57"),
