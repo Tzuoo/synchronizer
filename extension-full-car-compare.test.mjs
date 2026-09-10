@@ -96,24 +96,52 @@ test('金好運天天樂全車依實際頁面標題辨識，並可用隱藏同�
   assert.match(source, /\(\?:539\|天天樂\)\\s\*\[-－\]\\s\*全車/);
   assert.match(source, /game: page\.game/);
   assert.match(source, /SYNC_FULL_CAR_ROUTE/);
-  assert.match(source, /backgroundFullCarRoute = \{ game, url \};\s*\/\/ 第一次離開全車頁前立刻建立續讀框架[\s\S]*ensureBackgroundFullCar\(\)/);
+  assert.match(source, /backgroundQuoteRoutes\.set\(`\$\{game\}\|\$\{playType\}`/);
+  assert.match(source, /\/\/ 第一次離開全車頁前立刻建立續讀框架[\s\S]*ensureBackgroundFullCar\(\)/);
   assert.match(source, /data-sync-full-car/);
   assert.match(source, /new MutationObserver/);
   assert.match(source, /characterData: true/);
   assert.match(source, /setTimeout\(reportFullCarPage, 120\)/);
-  assert.match(source, /rootDomain\(location\.hostname\) !== 'bnd139\.com'/);
+  assert.match(source, /\['bnd139\.com', 'and539\.com'\]\.includes\(root\)/);
   assert.match(background, /const fullCarFrameKey/);
   assert.match(background, /fullCarFrames\.set\(fullCarFrameKey\(report\)/);
   assert.match(background, /game = String\(message\.game \|\| '539'\)/);
   assert.match(background, /FULL_CAR_PREFLIGHT", root: target\.root, game: target\.game/);
 });
 
-test('金好運加入暫存一律改由可見全車工作頁確認左側清單，並可在同遊戲內自動跳轉', () => {
+test('海勝2 539 全車與台號分開讀取並各自保留背景框架', () => {
+  assert.match(source, /const TAIHAO_ROUTE = \/\\\/Front\\\/B\\\/B04/);
+  assert.ok(source.includes('const LEGACY_QUOTE_ROUTE = /\\/Front\\/B\\/(?:B02|B04)'));
+  assert.match(source, /Object\.keys\(quotes\)\.length !== \(isFullCar \? 39 : 100\)/);
+  assert.match(source, /playType: page\.playType/);
+  assert.match(source, /backgroundQuoteRoutes\.forEach/);
+  assert.match(source, /dataset\.syncQuoteKey = key/);
+  assert.match(source, /sync-quote-\$\{route\.playType === '台號'/);
+  assert.match(source, /if \(LEGACY_QUOTE_ROUTE\.test\(location\.href\)\)/);
+});
+
+test('舊版台號可參與比價，但尚未支援加入的網站維持唯讀', async () => {
+  const dashboard = await read(new URL('../GitHub網頁原始碼/full-car-dashboard.js', import.meta.url));
+  assert.match(dashboard, /function planCanAdd\(\)/);
+  assert.match(dashboard, /target\.playType==='台號'&&target\.channel==='fullCar'/);
+  assert.match(dashboard, /GET_FULL_CAR_REPORTS/);
+  assert.match(dashboard, /GET_QUOTE_REPORTS/);
+  assert.doesNotMatch(dashboard, /x\.root==='vs968\.net'&&x\.game===state\.game&&x\.playType===state\.playType/);
+});
+
+test('金好運與海勝2加入暫存一律改由可見全車工作頁確認，並可在同遊戲內自動跳轉', () => {
   assert.match(source, /SYNC_BND_VISIBLE_FULL_CAR_COMMAND/);
   assert.match(source, /window\.top !== window/);
-  assert.match(source, /bndVisibleFullCar/);
-  assert.match(source, /clickBndFullCarNavigation/);
-  assert.match(source, /waitForVisibleBndFullCar/);
+  assert.match(source, /legacyVisibleFullCar/);
+  assert.match(source, /clickLegacyFullCarNavigation/);
+  assert.match(source, /waitForVisibleLegacyFullCar/);
+  assert.match(source, /\['bnd139\.com', 'and539\.com'\]\.includes\(rootDomain\(location\.hostname\)\).*window\.top !== window/);
+  assert.match(source, /root: message\.root/);
+  assert.match(source, /querySelectorAll\('a,button,input\[type="button"\],\[onclick\]'\)/);
+  assert.match(source, /backgroundQuoteRoutes\.get\(`\$\{game\}\|全車`\)/);
+  assert.match(source, /frame\.location\.href = route\.url/);
+  assert.match(source, /waitForMatchingLegacyFullCar/);
+  assert.match(source, /switched \? await waitForMatchingLegacyFullCar\(frame, orders\)/);
   assert.match(source, /網站未確認左側清單已更新，未回報加入成功/);
   assert.match(source, /dataset\?\.syncFullCar/);
   assert.match(source, /String\(element\.textContent \|\| element\.value \|\| ''\)\.trim\(\) === '全車'/);

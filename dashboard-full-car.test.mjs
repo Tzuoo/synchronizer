@@ -25,7 +25,7 @@ test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致',
   assert.match(ui, /總和大[^\n]+>6/);
   assert.match(ui, /總和小[^\n]+<=6/);
   assert.match(ui, /state\.orders=\[\];resetSelection\(\);resetEntry\(\);state\.plan=null/);
-  assert.match(html, /<script src="full-car-dashboard\.js\?build=77"><\/script>/);
+  assert.match(html, /<script src="full-car-dashboard\.js\?build=80"><\/script>/);
 });
 
 test('網頁橋接只接受正式網址與本機測試來源，且不存在送出注單命令', () => {
@@ -54,15 +54,15 @@ test('重複號碼保留、同價分配由擴充共用平衡紀錄決定', () =>
   assert.match(ui, /FULL_CAR_ADD_SEQUENCE/);
 });
 
-test('加州彩可切換全車與台號，台號採金額且只開放背景報價預覽', () => {
+test('加州彩可切換全車與台號，台號採金額並使用共同比價規劃', () => {
   assert.match(ui, /<option>加州彩<\/option>/);
   assert.match(ui, /\['全車','台號'\]/);
   assert.match(ui, /Play04Numbers|GET_QUOTE_REPORTS/);
   assert.match(ui, /台號'.+min:0,max:99,unit:'金額'/);
-  assert.match(ui, /可加入網站下注暫存區，尚未送出注單/);
+  assert.match(ui, /PLAN_FULL_CAR/);
   assert.match(ui, /state\.playType==='台號'.+min:0,max:99,unit:'金額'/);
-  assert.match(ui, /state\.plan=\[\{root:report\.root/);
-  assert.match(ui, /if\(!Array\.isArray\(state\.plan\)\|\|isReadOnly\(\)\)return/);
+  assert.match(ui, /function planCanAdd\(\)/);
+  assert.match(ui, /if\(!planCanAdd\(\)\)return/);
 });
 
 test('風雲 539 與加州彩都背景回報全車及台號本金', () => {
@@ -89,7 +89,7 @@ test('比價畫面不顯示期數且期數不參與下單橋接', () => {
 });
 
 test('加州彩全車與台號可建立風雲暫存方案', () => {
-  assert.match(ui, /state\.plan=\[\{root:report\.root,siteName:report\.siteName,channel:'quote'/);
+  assert.match(ui, /requestExtension\('PLAN_FULL_CAR'/);
   assert.doesNotMatch(ui, /state\.game!=='539'/);
   assert.doesNotMatch(ui, /只預覽/);
 });
@@ -97,6 +97,6 @@ test('加州彩全車與台號可建立風雲暫存方案', () => {
 test('天天樂目前僅測試背景報價，不可加入網站清單', () => {
   assert.match(ui, /const isReadOnly=\(\)=>state\.game==='天天樂'/);
   assert.match(ui, /天天樂目前只測試背景報價，不加入清單/);
-  assert.match(ui, /disabled=!Array\.isArray\(state\.plan\)\|\|isReadOnly\(\)/);
-  assert.match(ui, /if\(!Array\.isArray\(state\.plan\)\|\|isReadOnly\(\)\)return/);
+  assert.match(ui, /!isReadOnly\(\)/);
+  assert.match(ui, /if\(!planCanAdd\(\)\)return/);
 });
