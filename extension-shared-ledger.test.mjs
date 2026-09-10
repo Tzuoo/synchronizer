@@ -9,6 +9,7 @@ const pageHook = await readFile(new URL("../RuntimeData/同步器擴充功能/pa
 const manifest = JSON.parse(await readFile(new URL("../RuntimeData/同步器擴充功能/manifest.json", import.meta.url), "utf8"));
 const source = content.match(/function normalizeLedgerPhaseName[\s\S]*?(?=\nfunction storeLedgerSnapshot)/)?.[0];
 assert.ok(source, "同型總帳解析器必須存在");
+assert.match(source, /【\\\[（\(]/, "總帳期別必須去除來源外框格式");
 
 const node = value => ({ innerText: value, textContent: value });
 const makeRow = (gameName, cells) => ({
@@ -53,14 +54,14 @@ test("風雲同型總帳依網站原始遊戲分區保存", () => {
 test("喜與風雲共用表頭解析但網站來源不可混用", () => {
   assert.match(source, /\["kd998\.net", "vs968\.net"\]/);
   assert.match(source, /SITE_NAMES\[domain\]/);
-  assert.match(background, /row\.gameName, row\.phaseName, row\.playType/);
+  assert.match(background, /row\.gameName, phaseName, row\.playType/);
 });
 
 test("航海使用已確認的 A07 路由並保留網站回傳玩法順序", () => {
   assert.match(content, /"umh693\.com", "and539\.com", "pee688\.com"/);
   assert.match(content, /return `\$\{location\.origin\}\$\{prefix\}\/Front\/A\/A07`/);
   assert.match(background, /\.map\(\(row, sourceOrder\) =>/);
-  assert.match(background, /root: domain, sourceOrder/);
+  assert.match(background, /root: clientSite, sourceRoot: domain, sourceOrder/);
 });
 
 test("風雲與喜不建立第二個 SPA 並由網站 Vuex 背景取得總帳", () => {

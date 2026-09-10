@@ -24,6 +24,20 @@ test("風雲 DOM 與 Vuex 相同期別總帳只保留最新快照", () => {
   assert.equal(rows[0].totalAmount, 2000);
 });
 
+test("同一期別的全形外框不會形成第二份總帳快照", () => {
+  const base = {
+    site: "16", account: "you320", date: "2026-09-10", gameName: "539",
+    playType: "全車", totalAmount: 133570,
+  };
+  const rows = context.dedupeLedgerRows([
+    { ...base, id: "wrapped", phaseName: "【C115220】", winningAmount: 0, updatedAt: "2026-09-10T01:30:00Z" },
+    { ...base, id: "plain", phaseName: "C115220", winningAmount: 144159, updatedAt: "2026-09-10T01:31:00Z" },
+  ]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].id, "plain");
+  assert.equal(rows[0].phaseName, "C115220");
+});
+
 test("不同帳號或不同網站的同一期總帳不可合併", () => {
   const base = {
     date: "2026-08-29", gameName: "六合", phaseName: "S591",

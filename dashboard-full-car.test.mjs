@@ -25,7 +25,7 @@ test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致',
   assert.match(ui, /總和大[^\n]+>6/);
   assert.match(ui, /總和小[^\n]+<=6/);
   assert.match(ui, /state\.orders=\[\];resetSelection\(\);resetEntry\(\);state\.plan=null/);
-  assert.match(html, /<script src="full-car-dashboard\.js\?build=80"><\/script>/);
+  assert.match(html, /<script src="full-car-dashboard\.js\?build=81"><\/script>/);
 });
 
 test('網頁橋接只接受正式網址與本機測試來源，且不存在送出注單命令', () => {
