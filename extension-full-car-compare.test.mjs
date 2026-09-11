@@ -42,7 +42,11 @@ test('比價操作由同步器網頁橋接，彈窗不再保留重複介面', ()
 
 test('背景仍保留網頁所需的逐筆加入命令', () => {
   assert.match(background, /FULL_CAR_ADD_SEQUENCE/);
-  assert.match(background, /for \(const target of message\.targets/);
+  assert.match(background, /function batchFullCarTargets/);
+  assert.match(background, /同一網站的不同號碼若[\s\S]*合併不同號碼為一次/);
+  assert.match(background, /item\.number === order\.number/);
+  assert.match(background, /const targets = batchFullCarTargets\(message\.targets\)/);
+  assert.match(background, /for \(const target of targets/);
   assert.match(background, /目前沒有已開啟且可取得 \$\{game\} \$\{playType\} 報價的網站/);
   assert.doesNotMatch(background, /reports\.length !== 2/);
   assert.match(background, /QUOTE_PREFLIGHT/);
@@ -93,7 +97,7 @@ test('喜與風雲共用同型 Vuex 報價及暫存核心但保留網站名稱',
 
 test('金好運天天樂全車依實際頁面標題辨識，並可用隱藏同源框架續讀報價', () => {
   assert.match(source, /activeFullCarGame/);
-  assert.match(source, /\(\?:539\|天天樂\)\\s\*\[-－\]\\s\*全車/);
+  assert.match(source, /\(\?:539\|大樂\|天天樂\)\\s\*\[-－\]\\s\*全車/);
   assert.match(source, /game: page\.game/);
   assert.match(source, /SYNC_FULL_CAR_ROUTE/);
   assert.match(source, /backgroundQuoteRoutes\.set\(`\$\{game\}\|\$\{playType\}`/);
@@ -112,12 +116,24 @@ test('金好運天天樂全車依實際頁面標題辨識，並可用隱藏同�
 test('海勝2 539 全車與台號分開讀取並各自保留背景框架', () => {
   assert.match(source, /const TAIHAO_ROUTE = \/\\\/Front\\\/B\\\/B04/);
   assert.ok(source.includes('const LEGACY_QUOTE_ROUTE = /\\/Front\\/B\\/(?:B02|B04)'));
-  assert.match(source, /Object\.keys\(quotes\)\.length !== \(isFullCar \? 39 : 100\)/);
+  assert.match(source, /const maxNumber = context\.game === '大樂' \? 49/);
+  assert.match(source, /Object\.keys\(quotes\)\.length !== maxNumber \+ \(isFullCar \? 0 : 1\)/);
   assert.match(source, /playType: page\.playType/);
   assert.match(source, /backgroundQuoteRoutes\.forEach/);
   assert.match(source, /dataset\.syncQuoteKey = key/);
   assert.match(source, /sync-quote-\$\{route\.playType === '台號'/);
   assert.match(source, /if \(LEGACY_QUOTE_ROUTE\.test\(location\.href\)\)/);
+});
+
+test('海勝2 大樂與 539 全車依頁面標題及號碼範圍分開回報', async () => {
+  const dashboard = await read(new URL('../GitHub網頁原始碼/full-car-dashboard.js', import.meta.url));
+  assert.match(source, /\(539\|大樂\|天天樂\)\\s\*\[-－\]\\s\*\(全車\|台號\)/);
+  assert.match(source, /\['539', '大樂', '天天樂'\]\.includes\(game\)/);
+  assert.match(source, /\(539\|大樂\|天天樂\)\\s\*\(\?:\[-－\]\|已開盤\|未開盤\)/);
+  assert.match(dashboard, /<option>大樂<\/option>/);
+  assert.match(dashboard, /\['大樂','六合'\]\.includes\(state\.game\)\?49:39/);
+  assert.match(dashboard, /\['天天樂','大樂','六合'\]\.includes\(state\.game\)\?\['全車'\]/);
+  assert.match(dashboard, /for\(let n=0;n<=4;n\+\+\)ranges\[`頭\$\{n\}`\]/);
 });
 
 test('舊版台號可參與比價，但尚未支援加入的網站維持唯讀', async () => {
@@ -134,12 +150,17 @@ test('金好運與海勝2加入暫存一律改由可見全車工作頁確認，�
   assert.match(source, /window\.top !== window/);
   assert.match(source, /legacyVisibleFullCar/);
   assert.match(source, /clickLegacyFullCarNavigation/);
+  assert.match(source, /switchLegacyVisibleFullCar/);
+  assert.match(source, /navigateLegacyVisibleWorkFrame/);
   assert.match(source, /waitForVisibleLegacyFullCar/);
   assert.match(source, /\['bnd139\.com', 'and539\.com'\]\.includes\(rootDomain\(location\.hostname\)\).*window\.top !== window/);
   assert.match(source, /root: message\.root/);
   assert.match(source, /querySelectorAll\('a,button,input\[type="button"\],\[onclick\]'\)/);
   assert.match(source, /backgroundQuoteRoutes\.get\(`\$\{game\}\|全車`\)/);
   assert.match(source, /frame\.location\.href = route\.url/);
+  assert.match(source, /String\(frame\.name \|\| ''\)\.toLowerCase\(\) === 'mainframe'/);
+  assert.match(source, /\/Front\\\/\(\?:A\|B\)/);
+  assert.match(source, /dataset\?\.syncDetails/);
   assert.match(source, /waitForMatchingLegacyFullCar/);
   assert.match(source, /switched \? await waitForMatchingLegacyFullCar\(frame, orders\)/);
   assert.match(source, /message\.command === 'PREFLIGHT'\) return \{ ok: true, needsNavigation: true \}/);

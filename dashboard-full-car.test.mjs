@@ -14,7 +14,10 @@ test('同步器網頁提供獨立比價頁與熟悉的快速選號工具', () =>
   for (const label of ['紅波','藍波','綠波','單','雙','大','小','全','總和單','總和雙','總和大','總和小']) assert.ok(ui.includes(`'${label}'`));
   assert.match(html, /id="fullCarWaves"[^>]*><\/div><div id="fullCarQuickButtons"/);
   assert.match(ui, /<option>天天樂<\/option>/);
-  assert.match(ui, /state\.game==='天天樂'\?\['全車'\]/);
+  assert.match(ui, /<option>大樂<\/option>/);
+  assert.match(ui, /<option>六合<\/option>/);
+  assert.match(ui, /\['天天樂','大樂','六合'\]\.includes\(state\.game\)\?\['全車'\]/);
+  assert.match(ui, /\['大樂','六合'\]\.includes\(state\.game\)\?49:39/);
 });
 
 test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致', () => {
@@ -25,7 +28,7 @@ test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致',
   assert.match(ui, /總和大[^\n]+>6/);
   assert.match(ui, /總和小[^\n]+<=6/);
   assert.match(ui, /state\.orders=\[\];resetSelection\(\);resetEntry\(\);state\.plan=null/);
-  assert.match(html, /<script src="full-car-dashboard\.js\?build=81"><\/script>/);
+  assert.match(html, /<script src="full-car-dashboard\.js\?build=83"><\/script>/);
 });
 
 test('網頁橋接只接受正式網址與本機測試來源，且不存在送出注單命令', () => {
