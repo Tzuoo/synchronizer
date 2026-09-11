@@ -7,6 +7,7 @@ const ui = await readFile(new URL('./full-car-dashboard.js', import.meta.url), '
 const bridge = await readFile(new URL('../RuntimeData/同步器擴充功能/dashboard-bridge.js', import.meta.url), 'utf8');
 const pageHook = await readFile(new URL('../RuntimeData/同步器擴充功能/page-hook.js', import.meta.url), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../RuntimeData/同步器擴充功能/manifest.json', import.meta.url), 'utf8'));
+const release = JSON.parse(await readFile(new URL('./version.json', import.meta.url), 'utf8'));
 
 test('同步器網頁提供獨立比價頁與熟悉的快速選號工具', () => {
   assert.match(html, /id="compareTab"[^>]*>比價下單/);
@@ -28,7 +29,7 @@ test('快速下注鍵盤、單選切換及成功後清除行為跟網站一致',
   assert.match(ui, /總和大[^\n]+>6/);
   assert.match(ui, /總和小[^\n]+<=6/);
   assert.match(ui, /state\.orders=\[\];resetSelection\(\);resetEntry\(\);state\.plan=null/);
-  assert.match(html, /<script src="full-car-dashboard\.js\?build=83"><\/script>/);
+  assert.match(html, new RegExp(`<script src="full-car-dashboard\\.js\\?build=${release.build}"><\\/script>`));
 });
 
 test('網頁橋接只接受正式網址與本機測試來源，且不存在送出注單命令', () => {

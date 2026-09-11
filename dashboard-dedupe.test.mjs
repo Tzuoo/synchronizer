@@ -154,6 +154,22 @@ test("風雲特碼／特別號與台號的表格及 gateway 表示會一對一�
   assert.ok(result.every(row => row.ids.length === 2));
 });
 
+test("風雲大樂台號以網站列金額去重，支數不再重複相乘", () => {
+  const base = {
+    source: "風雲", account: "a0593", placedAt: "2026-09-11T19:03:28+08:00",
+    playType: "台號", stake: 500, unitAmount: 500, status: "待結算", reconciled: false,
+  };
+  const dom = { ...base, id: "vs968.net|a0593|table|1|02", event: "大樂 / T105477 - 001", selection: "台號 02", carCount: 5, potentialPayout: 500, betAmount: 500 };
+  const gateway = { ...base, id: "vs968.net|a0593|gateway|88|1", event: "台號", selection: "2", carCount: null, potentialPayout: 500, betAmount: 500 };
+  const result = context.dedupeExactBets([dom, gateway]);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].betAmount, 500);
+  assert.equal(result[0].carCount, 5);
+  assert.deepEqual(Array.from(result[0].ids), [dom.id, gateway.id]);
+  assert.match(html, /isWindTaihao=b\.source==='風雲'/);
+  assert.match(extension, /\^六合\\s\*\[／\/\]/);
+});
+
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
   const base = {
     source: "喜", account: "a0593", placedAt: "2026-08-26T20:26:43+08:00",
