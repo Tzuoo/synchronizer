@@ -142,6 +142,9 @@ test('金好運與海勝2加入暫存一律改由可見全車工作頁確認，�
   assert.match(source, /frame\.location\.href = route\.url/);
   assert.match(source, /waitForMatchingLegacyFullCar/);
   assert.match(source, /switched \? await waitForMatchingLegacyFullCar\(frame, orders\)/);
+  assert.match(source, /message\.command === 'PREFLIGHT'\) return \{ ok: true, needsNavigation: true \}/);
+  assert.match(source, /預檢不可先切頁/);
+  assert.match(source, /\}, 12000\);/);
   assert.match(source, /網站未確認左側清單已更新，未回報加入成功/);
   assert.match(source, /dataset\?\.syncFullCar/);
   assert.match(source, /String\(element\.textContent \|\| element\.value \|\| ''\)\.trim\(\) === '全車'/);
