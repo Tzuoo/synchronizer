@@ -8,31 +8,38 @@
   demo.before(panel);
   const options = panel.querySelector('.ledger-calc-options');
   const result = panel.querySelector('.ledger-calc-result');
-  const getSaved = () => JSON.parse(localStorage.getItem('ledgerCalculatorSelection') || '{}');
+  const getSaved = () => { try { return JSON.parse(localStorage.getItem('ledgerCalculatorSelectionV2') || '{}'); } catch { return {}; } };
   const defaultDivisor = { '正碼': 5300, '全車': 5300, '二星': 5300, '三星': 57000 };
   const money = value => '$' + Math.round(Number(value) || 0).toLocaleString('en-US');
   const refresh = () => {
     const selected = [...options.querySelectorAll('input[type=checkbox]:checked')].map(input => {
       const row = input.closest('label');
-      return { name: input.value, total: Number(row.dataset.total) || 0, winning: Number(row.dataset.winning) || 0, divisor: Number(row.querySelector('input[type=number]').value) || 0 };
+      return { game: row.dataset.game, name: input.value, total: Number(row.dataset.total) || 0, winning: Number(row.dataset.winning) || 0, divisor: Number(row.querySelector('input[type=number]').value) || 0 };
     });
-    localStorage.setItem('ledgerCalculatorSelection', JSON.stringify(Object.fromEntries([...options.querySelectorAll('label')].map(label => [label.dataset.name, { checked: label.querySelector('input[type=checkbox]').checked, divisor: label.querySelector('input[type=number]').value }]))));
+    localStorage.setItem('ledgerCalculatorSelectionV2', JSON.stringify({ ...getSaved(), ...Object.fromEntries([...options.querySelectorAll('label')].map(label => [JSON.stringify([label.dataset.game, label.dataset.name]), { checked: label.querySelector('input[type=checkbox]').checked, divisor: label.querySelector('input[type=number]').value }])) }));
     if (!selected.length) { result.textContent = '尚未選擇玩法'; return; }
-    const total = selected.reduce((sum, row) => sum + row.total, 0);
-    const winning = selected.reduce((sum, row) => sum + row.winning, 0);
-    const divisions = selected.filter(row => row.divisor > 0).map(row => `${row.name} ${money(row.winning)} ÷ ${row.divisor.toLocaleString('en-US')} = ${(row.winning / row.divisor).toFixed(2)}`);
-    result.innerHTML = `<div>總量加總：${selected.map(row => money(row.total)).join(' ＋ ')} ＝ <b>${money(total)}</b></div><div>中獎加總：${selected.map(row => money(row.winning)).join(' ＋ ')} ＝ <b>${money(winning)}</b></div>${divisions.length ? `<div>基準除法：${divisions.join('；')}</div><div>除法合計：${selected.reduce((sum,row)=>sum+(row.divisor>0?row.winning/row.divisor:0),0).toFixed(2)}</div>` : ''}`;
+    result.replaceChildren();
+    for (const game of new Set(selected.map(row => row.game))) {
+    const gameRows = selected.filter(row => row.game === game);
+    const total = gameRows.reduce((sum, row) => sum + row.total, 0);
+    const winning = gameRows.reduce((sum, row) => sum + row.winning, 0);
+    const divisions = gameRows.filter(row => row.divisor > 0).map(row => `${row.name} ${money(row.winning)} ÷ ${row.divisor.toLocaleString('en-US')} = ${(row.winning / row.divisor).toFixed(2)}`);
+    const block = document.createElement('div');
+    block.textContent = `${game}｜總量加總：${gameRows.map(row => money(row.total)).join(' ＋ ')} ＝ ${money(total)}；中獎加總：${gameRows.map(row => money(row.winning)).join(' ＋ ')} ＝ ${money(winning)}${divisions.length ? `；基準除法：${divisions.join('；')}；除法合計：${gameRows.reduce((sum,row)=>sum+(row.divisor>0?row.winning/row.divisor:0),0).toFixed(2)}` : ''}`;
+    result.append(block);
+    }
   };
   const sync = () => {
-    const table = demo.querySelector('.ledger-section.primary table');
-    if (!table) return;
-    const rows = [...table.querySelectorAll('tbody tr')].map(row => [...row.cells].map(cell => cell.textContent.trim()));
-    const data = rows.filter(cells => cells.length >= 5 && cells[0] !== '盤口小計').map(cells => ({ name: cells[0], total: Number(cells[2].replace(/[^0-9.-]/g, '')) || 0, winning: Number(cells[4].replace(/[^0-9.-]/g, '')) || 0 }));
+    const data = [...demo.querySelectorAll('.ledger-section.primary .ledger-game')].flatMap(block => {
+      const game = block.querySelector('.ledger-title b')?.textContent.trim();
+      return [...block.querySelectorAll('tbody tr')].map(row => [...row.cells].map(cell => cell.textContent.trim()))
+        .filter(cells => game && cells.length >= 5 && cells[0] !== '盤口小計' && cells[0].replace(/\s/g, '') !== '無下注資料')
+        .map(cells => ({ game, name: cells[0], total: Number(cells[2].replace(/[^0-9.-]/g, '')) || 0, winning: Number(cells[4].replace(/[^0-9.-]/g, '')) || 0 }));
+    });
     // 總帳輪詢重繪時，表格可能短暫只有表頭；不可把使用者選項存成空白。
     if (!data.length) return;
     const saved = getSaved();
-    const old = new Map([...options.querySelectorAll('label')].map(label => [label.dataset.name, label.querySelector('input[type=number]').value]));
-    options.replaceChildren(...data.map(row => { const label = document.createElement('label'); label.dataset.name = row.name; label.dataset.total = row.total; label.dataset.winning = row.winning; const prior = saved[row.name] || {}; const divisor = prior.divisor ?? old.get(row.name) ?? defaultDivisor[row.name] ?? ''; label.innerHTML = `<input type="checkbox" value="${row.name}"${prior.checked ? ' checked' : ''}> ${row.name} <input type="number" min="0" step="1" placeholder="除數" value="${divisor}">`; label.querySelector('input[type=checkbox]').addEventListener('change', refresh); label.querySelector('input[type=number]').addEventListener('input', refresh); return label; }));
+    options.replaceChildren(...data.map(row => { const label = document.createElement('label'); label.dataset.game = row.game; label.dataset.name = row.name; label.dataset.total = row.total; label.dataset.winning = row.winning; const prior = saved[JSON.stringify([row.game, row.name])] || {}; const divisor = prior.divisor ?? defaultDivisor[row.name] ?? ''; label.innerHTML = '<input type="checkbox"><span></span><input type="number" min="0" step="1" placeholder="除數">'; label.querySelector('span').textContent = ` ${row.game} ${row.name} `; const checkbox = label.querySelector('input[type=checkbox]'); checkbox.value = row.name; checkbox.checked = !!prior.checked; label.querySelector('input[type=number]').value = divisor; checkbox.addEventListener('change', refresh); label.querySelector('input[type=number]').addEventListener('input', refresh); return label; }));
     refresh();
   };
   new MutationObserver(sync).observe(demo, { childList: true, subtree: true });
