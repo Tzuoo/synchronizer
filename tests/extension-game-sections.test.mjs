@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const extensionRoot = new URL("../RuntimeData/同步器擴充功能/", import.meta.url);
+const extensionRoot = new URL("../../RuntimeData/同步器擴充功能/", import.meta.url);
 const content = await readFile(new URL("content.js", extensionRoot), "utf8");
 const manifest = JSON.parse(await readFile(new URL("manifest.json", extensionRoot), "utf8"));
 

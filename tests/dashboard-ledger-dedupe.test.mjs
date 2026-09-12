@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = html.match(/function normalizeLedgerPhaseName[\s\S]*?(?=\nfunction renderLedger)/)?.[0];
 assert.ok(source, "總帳期別正規化與去重函式必須存在");
 const context = {};

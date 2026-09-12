@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
-const version = JSON.parse(await readFile(new URL("./version.json", import.meta.url), "utf8"));
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const version = JSON.parse(await readFile(new URL("../version.json", import.meta.url), "utf8"));
 
 test("網頁顯示最新版、需更新與離線狀態", () => {
   assert.match(html, /id="clientMonitor"/);

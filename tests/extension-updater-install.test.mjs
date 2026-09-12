@@ -4,11 +4,11 @@ import { readFile } from 'node:fs/promises';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const installer = fileURLToPath(new URL('../RuntimeData/Updater/Install-UpdateTask.ps1', import.meta.url));
+const installer = fileURLToPath(new URL('../../RuntimeData/Updater/Install-UpdateTask.ps1', import.meta.url));
 const source = await readFile(installer, 'utf8');
 
 test('updater and installer remain ASCII-safe and parse in real Windows PowerShell 5.1', {skip: process.platform !== 'win32'}, async () => {
-  const updater = fileURLToPath(new URL('../RuntimeData/Updater/Update-Synchronizer.ps1', import.meta.url));
+  const updater = fileURLToPath(new URL('../../RuntimeData/Updater/Update-Synchronizer.ps1', import.meta.url));
   for (const path of [installer, updater]) {
     assert.doesNotMatch(await readFile(path, 'utf8'), /[^\x00-\x7f]/);
     const script = `$ErrorActionPreference='Stop'; if($PSVersionTable.PSVersion.Major -ne 5){throw 'Expected Windows PowerShell 5.1'}; $t=$null; $e=$null; [System.Management.Automation.Language.Parser]::ParseFile('${path.replaceAll("'", "''")}',[ref]$t,[ref]$e)|Out-Null; if($e.Count){throw ($e|Out-String)}; Write-Output 'Parse passed'`;
@@ -18,13 +18,25 @@ test('updater and installer remain ASCII-safe and parse in real Windows PowerShe
   assert.ok(source.indexOf('Parser]::ParseFile') < source.indexOf('$task = Register-SynchronizerUpdateTask'));
 });
 
-test('installer preserves silent least-privilege operation and logs errors before exit', () => {
-  assert.doesNotMatch(source, /schtasks\.exe|Start-Process|RunAs/);
+test('installer elevates only once for the existing protected RuntimeData folder, then schedules least-privilege updates', () => {
+  assert.doesNotMatch(source, /schtasks\.exe/);
+  assert.match(source, /Start-Process[\s\S]*-Verb RunAs/);
+  assert.match(source, /Grant-UserRuntimeModify/);
+  assert.match(source, /InstallUserSid/);
+  assert.match(source, /InstallAccount/);
+  assert.match(source, /icacls\.exe/);
   assert.match(source, /-WindowStyle Hidden/);
   assert.match(source, /Principal\.RunLevel = 0/);
   assert.match(source, /Principal\.LogonType = 3/);
   assert.match(source, /install\.log/);
   assert.match(source, /Exception\.ToString\(\)/);
+  assert.match(source, /Get-CurrentChromeSynchronizerPath/);
+  assert.match(source, /Chrome still loads a different extension folder/);
+  assert.match(source, /never edit Preferences/);
+  assert.match(source, /function Install-ExtensionSafely/);
+  assert.match(source, /Install-ManagedExtension/);
+  assert.match(source, /Previous extension backup/);
+  assert.ok(source.indexOf('Install-ExtensionSafely $sourceExtensionDir.FullName $targetExtensionDir') > source.indexOf('$sourceExtensionDir ='));
   assert.ok(source.indexOf('$task = Register-SynchronizerUpdateTask') < source.indexOf('Remove-ItemProperty'));
   assert.ok(source.indexOf('Registered task verification failed') < source.indexOf('Remove-ItemProperty'));
 });

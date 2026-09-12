@@ -3,10 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const content = await readFile(new URL("../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
-const background = await readFile(new URL("../RuntimeData/同步器擴充功能/background.js", import.meta.url), "utf8");
-const pageHook = await readFile(new URL("../RuntimeData/同步器擴充功能/page-hook.js", import.meta.url), "utf8");
-const manifest = JSON.parse(await readFile(new URL("../RuntimeData/同步器擴充功能/manifest.json", import.meta.url), "utf8"));
+const content = await readFile(new URL("../../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
+const background = await readFile(new URL("../../RuntimeData/同步器擴充功能/background.js", import.meta.url), "utf8");
+const pageHook = await readFile(new URL("../../RuntimeData/同步器擴充功能/page-hook.js", import.meta.url), "utf8");
+const manifest = JSON.parse(await readFile(new URL("../../RuntimeData/同步器擴充功能/manifest.json", import.meta.url), "utf8"));
 const source = content.match(/function normalizeLedgerPhaseName[\s\S]*?(?=\nfunction storeLedgerSnapshot)/)?.[0];
 assert.ok(source, "同型總帳解析器必須存在");
 assert.match(source, /【\\\[（\(]/, "總帳期別必須去除來源外框格式");

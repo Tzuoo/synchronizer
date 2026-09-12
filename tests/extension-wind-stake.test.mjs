@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const source = await readFile(new URL('../RuntimeData/同步器擴充功能/src/content/parsers-dom.js', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../RuntimeData/同步器擴充功能/src/content/parsers-dom.js', import.meta.url), 'utf8');
 const batches = [
   ['20:54:41', [['49',200,2],['68',300,3],['94',200,2]],700],
   ['20:09:53', ['00','20','27','30','67','72','76','77','79','98'].map(n=>[n,300,3]),3000],

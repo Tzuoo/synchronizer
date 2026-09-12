@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 
 test("六合總帳指定排序但保留原始名稱與金額，539 排序不變", () => {
   const comparator = new Function(`${html.match(/function ledgerPlayCompare[^\r\n]+/)[0]};return ledgerPlayCompare`)();

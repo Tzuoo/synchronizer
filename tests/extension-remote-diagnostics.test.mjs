@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
-const root=new URL('../RuntimeData/同步器擴充功能/',import.meta.url);
+const root=new URL('../../RuntimeData/同步器擴充功能/',import.meta.url);
 const code=await readFile(new URL('diagnostics.js',root),'utf8');
 const background=await readFile(new URL('background.js',root),'utf8');
 const context=vm.createContext({});vm.runInContext(code+';this.api=SyncDiagnostics;',context);
@@ -20,7 +20,7 @@ test('errors survive recovery, zero counts, different stages and repeated upload
  assert.doesNotMatch(background,/chrome\.notifications|alert\(/);
 });
 test('dashboard separates device labels, escapes contents and preserves error history',async()=>{
- const source=await readFile(new URL('./remote-diagnostics.js',import.meta.url),'utf8');
+ const source=await readFile(new URL('../remote-diagnostics.js',import.meta.url),'utf8');
  const target={innerHTML:'',querySelectorAll:()=>[]};
  const ui=vm.createContext({document:{querySelector:()=>target},Date,Map,Set,Number,renderClientStatus(){},clientStatusRows:[],escapeHtml:s=>String(s).replaceAll('<','&lt;').replaceAll('>','&gt;')});
  vm.runInContext(source+';this.render=renderRemoteDiagnostics;',ui);

@@ -5,7 +5,7 @@ import { mkdtemp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { extensionRoot, contentParts, composeContent, buildContent } from './tools/build-extension.mjs';
+import { extensionRoot, contentParts, composeContent, buildContent } from '../tools/build-extension.mjs';
 
 test('content.js is exactly the generated source and compiles as a single script', async () => {
   const result = await buildContent({ check: true });

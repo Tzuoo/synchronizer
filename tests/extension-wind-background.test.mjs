@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
-const source=await readFile(new URL('../RuntimeData/同步器擴充功能/src/content/parsers-gateway.js',import.meta.url),'utf8');
+const source=await readFile(new URL('../../RuntimeData/同步器擴充功能/src/content/parsers-gateway.js',import.meta.url),'utf8');
 test('風雲完整背景六合台號清單還原來源倒序項次與支數，不改下注金額',()=>{
   const context={location:{hostname:'www.vs968.net'},rootDomain:()=> 'vs968.net',HOST_NAMES:{},SITE_NAMES:{'vs968.net':'風雲'},enrichedBet:(a,b)=>({...a,...b})};
   vm.runInNewContext(source,context);

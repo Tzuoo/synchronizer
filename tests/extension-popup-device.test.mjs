@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 
-const source = await readFile(new URL('../RuntimeData/同步器擴充功能/popup.js', import.meta.url), 'utf8');
+const source = await readFile(new URL('../../RuntimeData/同步器擴充功能/popup.js', import.meta.url), 'utf8');
 function openPopup(storage) {
   const elements = new Map();
   const makeElement = () => ({ textContent: '', value: '', disabled: true, listeners: {},

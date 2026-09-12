@@ -3,8 +3,8 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
-const extension = await readFile(new URL("../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+const extension = await readFile(new URL("../../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
 
 test("同步器以最前方獨立欄位顯示網站原始項次", () => {
   assert.match(html, /<th>項次<\/th><th>投注內容<\/th>/);

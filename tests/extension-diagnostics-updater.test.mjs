@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const root = new URL("../", import.meta.url);
+const root = new URL("../../", import.meta.url);
 const background = await readFile(new URL("RuntimeData/同步器擴充功能/background.js", root), "utf8");
 const content = await readFile(new URL("RuntimeData/同步器擴充功能/content.js", root), "utf8");
 const popup = await readFile(new URL("RuntimeData/同步器擴充功能/popup.js", root), "utf8");

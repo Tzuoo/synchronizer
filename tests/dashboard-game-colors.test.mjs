@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = html.match(/function gameColorClass[\s\S]*?(?=\nfunction ledgerRowCompare)/)?.[0];
 assert.ok(source, "盤口顏色與總帳排序函式必須存在");
 const context = {};

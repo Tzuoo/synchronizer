@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const source = html.match(/function escapeHtml[\s\S]*?(?=\nfunction isDeletedBet)/)?.[0];
 assert.ok(source, "structured selection functions must be present");
 const context = {

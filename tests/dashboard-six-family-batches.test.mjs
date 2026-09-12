@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const countSource = html.match(/function getCountLabel[\s\S]*?(?=\nfunction formatStructuredSelection)/)?.[0];
 const source = html.match(/function displayBets[\s\S]*?(?=\nfunction draw)/)?.[0];
 assert.ok(countSource && source, "displayBets and count label must be present");

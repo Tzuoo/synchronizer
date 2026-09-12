@@ -2,6 +2,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import vm from 'node:vm';
+import { createHash } from 'node:crypto';
 
 export const extensionRoot = new URL('../../RuntimeData/同步器擴充功能/', import.meta.url);
 // Preserve the original script order: function declarations share one scope,
@@ -42,5 +43,16 @@ export async function buildContent({ root = extensionRoot, check = false } = {})
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   await buildContent({ check: process.argv.includes('--check') });
+  // Explicit program inventory: never include stray local settings or retired patches.
+  const files = ['background.js','config.js','content.js','diagnostics.js','manifest.json',
+    'options.html','options.js','page-hook.js','popup.html','popup.js','style.css',
+    'src/README.md', ...contentParts.map(name => `src/content/${name}`)];
+  const hashes = Object.fromEntries(await Promise.all(files.map(async name =>
+    [name, createHash('sha256').update(await readFile(new URL(name, extensionRoot))).digest('hex')])));
+  const inventory = JSON.stringify({ schemaVersion: 1, files: hashes }, null, 2) + '\n';
+  const inventoryPath = new URL('managed-files.json', extensionRoot);
+  if (process.argv.includes('--check')) {
+    if (await readFile(inventoryPath, 'utf8') !== inventory) throw new Error('Program inventory is stale. Rebuild extension.');
+  } else await writeFile(inventoryPath, inventory, 'utf8');
   console.log(process.argv.includes('--check') ? 'Extension content bundle is current.' : 'Extension content bundle generated.');
 }

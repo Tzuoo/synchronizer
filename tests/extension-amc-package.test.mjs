@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
-const root = new URL('../RuntimeData/同步器擴充功能/', import.meta.url);
+const root = new URL('../../RuntimeData/同步器擴充功能/', import.meta.url);
 const parser = await readFile(new URL('src/content/parsers-amc.js', root), 'utf8');
 const hook = await readFile(new URL('page-hook.js', root), 'utf8');
 const main = '01,02,03,04,05,06,07,08,10,11\n12,13,14,15,16,17,18,20,21,22\n23,24,25,26,27,28,30,31,32,33\n34,35,36,37,38';

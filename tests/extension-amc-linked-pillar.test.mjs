@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import vm from "node:vm";
 
-const content = await readFile(new URL("../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
+const content = await readFile(new URL("../../RuntimeData/同步器擴充功能/content.js", import.meta.url), "utf8");
 const scraper = content.match(/function scrapeAmcOrders[\s\S]*?(?=\nfunction scrapeVs968Json)/)?.[0];
 assert.ok(scraper, "航海共用解析器必須存在");
 
@@ -49,7 +49,7 @@ test("航海三星連柱碰保留網站名稱、全部號碼與網站碰數", ()
   assert.match(rows[0].selection, /碰 10, 20, 30$/);
 });
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const formatter = html.match(/function formatStructuredSelection[\s\S]*?(?=\nfunction isDeletedBet)/)?.[0];
 assert.ok(formatter, "下注內容格式化函式必須存在");
 const displayContext = { escapeHtml: value => String(value) };

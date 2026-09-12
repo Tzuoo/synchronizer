@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-const root = new URL('../RuntimeData/同步器擴充功能/', import.meta.url);
+const root = new URL('../../RuntimeData/同步器擴充功能/', import.meta.url);
 const css = await readFile(new URL('style.css', root), 'utf8');
 const html = await readFile(new URL('popup.html', root), 'utf8');
 const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];

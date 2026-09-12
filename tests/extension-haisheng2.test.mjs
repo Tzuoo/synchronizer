@@ -3,7 +3,7 @@ import test from 'node:test';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 
-const root = new URL('../RuntimeData/同步器擴充功能/', import.meta.url);
+const root = new URL('../../RuntimeData/同步器擴充功能/', import.meta.url);
 const read = path => readFile(new URL(path, root), 'utf8');
 const content = await read('content.js');
 const manifest = JSON.parse(await read('manifest.json'));
@@ -18,9 +18,9 @@ test('海勝2 在主頁與子框架注入兩個入口，並沿用海勝解析器
   assert.match(content, /\["umh693\.com", "and539\.com"\]\.includes\(domain\)\s*\? scrapeUmhOrders\(\)/);
   assert.match(await read('options.js'), /"w0\.and539\.com"/);
   assert.match(await read('background.js'), /"and539\.com":"0593"/);
-  const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
   assert.match(html, /"海勝","海勝2","航海"/);
-  assert.match(await readFile(new URL('./remote-diagnostics.js', import.meta.url), 'utf8'), /'and539\.com':'海勝2'/);
+  assert.match(await readFile(new URL('../remote-diagnostics.js', import.meta.url), 'utf8'), /'and539\.com':'海勝2'/);
 });
 
 test('兩站共用 A07 格式，保留獨立名稱、盤口、原始玩法及數值', () => {

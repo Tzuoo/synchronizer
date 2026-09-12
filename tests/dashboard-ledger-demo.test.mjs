@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
+const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 test("總帳不使用固定測試資料並依網站目前內容顯示", () => {
   assert.doesNotMatch(html, /const LEDGER_DEMO/);
   assert.doesNotMatch(html, /161050|28620|C115207|2026-08-26/);

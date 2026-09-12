@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import { readFile } from 'node:fs/promises';
 
-const root = new URL('../RuntimeData/同步器擴充功能/', import.meta.url);
+const root = new URL('../../RuntimeData/同步器擴充功能/', import.meta.url);
 const source = await readFile(new URL('content.js', root), 'utf8');
 function functions(names) {
   return names.map(name => {

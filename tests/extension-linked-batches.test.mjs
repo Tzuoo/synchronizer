@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import test from 'node:test';
 import vm from 'node:vm';
 
-const base = new URL('../RuntimeData/同步器擴充功能/src/content/', import.meta.url);
+const base = new URL('../../RuntimeData/同步器擴充功能/src/content/', import.meta.url);
 const sources = await Promise.all(['shared.js', 'parsers-dom.js', 'parsers-a06.js', 'parsers-umh.js'].map(name => readFile(new URL(name, base), 'utf8')));
 const numbers = '01,02,03,04,06,07,08,09,10,11\n12,13,14,16,17,18,19,20,21,22\n23,24,26,27,28,29,30,31,32,33\n34,36,37,38,39';
 function context(host) {
