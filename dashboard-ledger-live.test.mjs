@@ -4,6 +4,15 @@ import test from "node:test";
 
 const html = await readFile(new URL("./index.html", import.meta.url), "utf8");
 
+test("六合總帳指定排序但保留原始名稱與金額，539 排序不變", () => {
+  const comparator = new Function(`${html.match(/function ledgerPlayCompare[^\r\n]+/)[0]};return ledgerPlayCompare`)();
+  const rows = ['全車','天碰二','台號','天碰三','特碼','特尾三'].map((playType, sourceOrder) => ({gameName:'六合',playType,sourceOrder,totalAmount:sourceOrder+100}));
+  assert.deepEqual([...rows].sort(comparator).map(row=>row.playType), ['特碼','台號','全車','天碰二','天碰三','特尾三']);
+  assert.deepEqual(rows.map(row=>row.totalAmount), [100,101,102,103,104,105]);
+  assert.deepEqual(['四星','三星','全車','二星','正碼'].map(playType=>({gameName:'539',playType})).sort(comparator).map(row=>row.playType), ['正碼','全車','二星','三星','四星']);
+  assert.ok(comparator({gameName:'六合',playType:'正碼'},{gameName:'六合',playType:'台號'})<0);
+});
+
 test("live ledger fetches authorized current snapshots", () => {
   assert.match(html, /fetch\(`\$\{API_ROOT\}\/ledger`/);
   assert.match(html, /authHeaders\(\)/);

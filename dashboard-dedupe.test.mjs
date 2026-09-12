@@ -172,7 +172,8 @@ test("風雲大樂台號以網站列金額去重，並依同一批次收合支�
   assert.deepEqual(Array.from(batches[0]._windDetails, detail => [detail.number, detail.carCount]), [['02',5],['36',5],['49',5]]);
   assert.match(html, /isWindTaihao=b\.source==='風雲'/);
   assert.match(html, /\^\(\?:539\|大樂\|加州彩\)\\s\*\[\\\/／-\]/);
-  assert.match(extension, /\^六合\\s\*\[／\/\]/);
+  assert.match(extension, /const betAmount = stake;/);
+  assert.doesNotMatch(extension, /stake \* carCount/);
 });
 
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
