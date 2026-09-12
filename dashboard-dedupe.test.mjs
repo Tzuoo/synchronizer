@@ -154,19 +154,24 @@ test("風雲特碼／特別號與台號的表格及 gateway 表示會一對一�
   assert.ok(result.every(row => row.ids.length === 2));
 });
 
-test("風雲大樂台號以網站列金額去重，支數不再重複相乘", () => {
+test("風雲大樂台號以網站列金額去重，並依同一批次收合支數", () => {
   const base = {
     source: "風雲", account: "a0593", placedAt: "2026-09-11T19:03:28+08:00",
     playType: "台號", stake: 500, unitAmount: 500, status: "待結算", reconciled: false,
   };
-  const dom = { ...base, id: "vs968.net|a0593|table|1|02", event: "大樂 / T105477 - 001", selection: "台號 02", carCount: 5, potentialPayout: 500, betAmount: 500 };
-  const gateway = { ...base, id: "vs968.net|a0593|gateway|88|1", event: "台號", selection: "2", carCount: null, potentialPayout: 500, betAmount: 500 };
-  const result = context.dedupeExactBets([dom, gateway]);
-  assert.equal(result.length, 1);
-  assert.equal(result[0].betAmount, 500);
-  assert.equal(result[0].carCount, 5);
-  assert.deepEqual(Array.from(result[0].ids), [dom.id, gateway.id]);
+  const tableRows = ['02','36','49'].map(number => ({ ...base, id: `vs968.net|a0593|table|1|${number}`, event: "大樂 / T105477 - 001", selection: `台號 ${number}`, itemNumber: '1', carCount: 5, potentialPayout: 500, betAmount: 500 }));
+  const gatewayRows = ['2','36','49'].map((number,index) => ({ ...base, id: `vs968.net|a0593|gateway|88|${index + 1}`, event: "台號", selection: number, carCount: null, potentialPayout: 500, betAmount: 500 }));
+  const result = context.dedupeExactBets([...tableRows,...gatewayRows]);
+  assert.equal(result.length, 3);
+  assert.ok(result.every(row => row.betAmount === 500 && row.carCount === 5 && row.ids.length === 2));
+  const batches = context.collapseWindNumberBatches(result);
+  assert.equal(batches.length, 1);
+  assert.equal(batches[0].playType, '台號');
+  assert.equal(batches[0].betAmount, 1500);
+  assert.equal(batches[0]._windDetailUnit, '支');
+  assert.deepEqual(Array.from(batches[0]._windDetails, detail => [detail.number, detail.carCount]), [['02',5],['36',5],['49',5]]);
   assert.match(html, /isWindTaihao=b\.source==='風雲'/);
+  assert.match(html, /\^\(\?:539\|大樂\|加州彩\)\\s\*\[\\\/／-\]/);
   assert.match(extension, /\^六合\\s\*\[／\/\]/);
 });
 

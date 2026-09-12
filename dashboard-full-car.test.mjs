@@ -5,6 +5,8 @@ import { readFile } from 'node:fs/promises';
 const html = await readFile(new URL('./index.html', import.meta.url), 'utf8');
 const ui = await readFile(new URL('./full-car-dashboard.js', import.meta.url), 'utf8');
 const bridge = await readFile(new URL('../RuntimeData/同步器擴充功能/dashboard-bridge.js', import.meta.url), 'utf8');
+const background = await readFile(new URL('../RuntimeData/同步器擴充功能/background.js', import.meta.url), 'utf8');
+const localServer = await readFile(new URL('../本機同步器/Local-SynchronizerServer.ps1', import.meta.url), 'utf8');
 const pageHook = await readFile(new URL('../RuntimeData/同步器擴充功能/page-hook.js', import.meta.url), 'utf8');
 const manifest = JSON.parse(await readFile(new URL('../RuntimeData/同步器擴充功能/manifest.json', import.meta.url), 'utf8'));
 const release = JSON.parse(await readFile(new URL('./version.json', import.meta.url), 'utf8'));
@@ -49,6 +51,19 @@ test('只有 localhost 與 127.0.0.1 本機預覽免密碼，正式網址仍需�
   assert.match(html, /if\(IS_LOCAL_PREVIEW\|\|authToken\)lock\.classList\.add\('hidden'\)/);
   assert.doesNotMatch(html, /preview=1[^\n]+lock\.classList/);
   assert.match(html, /fetch\(`\$\{API_ROOT\}\/auth`/);
+});
+
+test('本機免密碼頁讀固定服務快取，擴充主動更新且正式網址不開放此通道', () => {
+  assert.match(html, /IS_LOCAL_PREVIEW\?`\/__sync\/bets\?ts=\$\{Date\.now\(\)\}`:API/);
+  assert.match(html, /payload\.waiting/);
+  assert.match(ui, /window\.requestSynchronizerExtension=requestExtension/);
+  assert.doesNotMatch(bridge, /GET_LOCAL_PREVIEW_BETS/);
+  assert.match(background, /\$\{DASHBOARD\}\/api\/extension-preview/);
+  assert.match(background, /http:\/\/127\.0\.0\.1:8765\/__sync\/cache/);
+  assert.match(background, /if \(response\.ok\) refreshLocalPreviewCache\(\)/);
+  assert.match(localServer, /TcpListener.*Loopback/);
+  assert.match(localServer, /\\__sync\\bets/);
+  assert.match(localServer, /\\__sync\\cache/);
 });
 
 test('重複號碼保留、同價分配由擴充共用平衡紀錄決定', () => {
