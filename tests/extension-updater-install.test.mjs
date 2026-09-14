@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const installer = fileURLToPath(new URL('../../RuntimeData/Updater/Install-UpdateTask.ps1', import.meta.url));
 const source = await readFile(installer, 'utf8');
+const packageBuilder = fileURLToPath(new URL('../../發布工具/Build-ExtensionUpdate.ps1', import.meta.url));
 
 test('updater and installer remain ASCII-safe and parse in real Windows PowerShell 5.1', {skip: process.platform !== 'win32'}, async () => {
   const updater = fileURLToPath(new URL('../../RuntimeData/Updater/Update-Synchronizer.ps1', import.meta.url));
@@ -18,6 +19,13 @@ test('updater and installer remain ASCII-safe and parse in real Windows PowerShe
   assert.ok(source.indexOf('Parser]::ParseFile') < source.indexOf('$task = Register-SynchronizerUpdateTask'));
 });
 
+test('extension package launcher remains ASCII-safe for Windows PowerShell paths', async () => {
+  const source = await readFile(packageBuilder, 'utf8');
+  assert.doesNotMatch(source, /[^\x00-\x7f]/);
+  assert.match(source, /Find-DirectChildWithFile/);
+  assert.match(source, /RuntimeData/);
+});
+
 test('installer elevates only once for the existing protected RuntimeData folder, then schedules least-privilege updates', () => {
   assert.doesNotMatch(source, /schtasks\.exe/);
   assert.match(source, /Start-Process[\s\S]*-Verb RunAs/);
@@ -27,6 +35,9 @@ test('installer elevates only once for the existing protected RuntimeData folder
   assert.match(source, /icacls\.exe/);
   assert.match(source, /-WindowStyle Hidden/);
   assert.match(source, /Principal\.RunLevel = 0/);
+  assert.match(source, /Get-NormalizedTaskUserId/);
+  assert.match(source, /Has-UnexpectedTaskRepetition/);
+  assert.match(source, /PT0S/);
   assert.match(source, /Principal\.LogonType = 3/);
   assert.match(source, /install\.log/);
   assert.match(source, /Exception\.ToString\(\)/);
