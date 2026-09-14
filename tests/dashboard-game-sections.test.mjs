@@ -28,3 +28,9 @@ test("單站依網站首次出現的盤口分區且區內順序不變", () => {
 test("風雲既有六合合併批次仍辨識為六合", () => {
   assert.equal(context.gameSectionOf({ event: "台號", playType: "台號", _sixBatch: true }), "六合");
 });
+
+test("喜未加盤口前綴的明細與背景 539 仍使用 539 配色", () => {
+  assert.equal(context.gameSectionOf({source:'喜',event:'正碼',rawText:'539 / F106969 - 001 14'}),'539');
+  assert.equal(context.gameSectionOf({source:'喜',event:'正碼',rawText:'{"casino":"3","game":{"seq":"F106969"}}'}),'539');
+  assert.equal(context.gameSectionOf({source:'喜',event:'正碼',rawText:'{"casino":"3","game":{"seq":"S595"}}'}),'');
+});

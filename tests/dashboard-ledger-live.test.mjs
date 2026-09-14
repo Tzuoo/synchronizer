@@ -14,7 +14,9 @@ test("六合總帳指定排序但保留原始名稱與金額，539 排序不變"
 });
 
 test("live ledger fetches authorized current snapshots", () => {
-  assert.match(html, /fetch\(`\$\{API_ROOT\}\/ledger`/);
+  assert.ok(html.includes("IS_LOCAL_PREVIEW?'/__sync/ledger':`${API_ROOT}/ledger`"));
+  assert.ok(html.includes('if(!authToken&&!IS_LOCAL_PREVIEW)'));
+  assert.ok(html.includes('等待擴充總帳同步'));
   assert.match(html, /authHeaders\(\)/);
   assert.match(html, /setInterval\(loadLedger,10000\)/);
 });

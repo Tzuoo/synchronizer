@@ -1,6 +1,21 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+
+test('三星套餐緊接三星、除數預設57000且結果以摘要和表格呈現', () => {
+  const source = readFileSync(new URL('../ledger-calculator.js', import.meta.url), 'utf8');
+  const helpers = source.split('\n').filter(line => /const (defaultDivisor|divisorFor|playRank) =/.test(line)).join('\n');
+  const context = vm.createContext({});
+  vm.runInContext(helpers, context);
+  assert.equal(vm.runInContext("divisorFor('三星 (套餐)')", context), 57000);
+  assert.equal(vm.runInContext("divisorFor('三星（套餐）')", context), 57000);
+  assert.equal(vm.runInContext("['三星','四星','三星 (套餐)'].sort((a,b)=>playRank(a)-playRank(b)).join('|')", context), '三星|三星 (套餐)|四星');
+  assert.ok(source.includes("ledger-calc-summary"));
+  assert.ok(source.includes("ledger-calc-table"));
+  assert.ok(source.includes("查看加總過程"));
+  assert.ok(source.includes("['總量',money(total),'']"));
+});
 
 test('自訂總和讀取所有盤口，以遊戲與玩法保存並分開計算', () => {
   const source = readFileSync(new URL('../ledger-calculator.js', import.meta.url), 'utf8');
