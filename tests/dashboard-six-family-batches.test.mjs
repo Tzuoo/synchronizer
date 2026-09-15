@@ -5,8 +5,9 @@ import vm from "node:vm";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
 const countSource = html.match(/function formatCount[\s\S]*?(?=\nfunction formatStructuredSelection)/)?.[0];
+const collapseSource = html.match(/function windGatewayParentId[\s\S]*?(?=\nfunction suppressKdLegacyRows)/)?.[0];
 const source = html.match(/function displayBets[\s\S]*?(?=\nfunction draw)/)?.[0];
-assert.ok(countSource && source, "displayBets and count label must be present");
+assert.ok(countSource && collapseSource && source, "batch collapse, displayBets and count label must be present");
 
 const context = {
   escapeHtml: value => String(value),
@@ -20,6 +21,8 @@ vm.runInNewContext(
   `let bets=[];${countSource};${source};globalThis.getCountLabel=getCountLabel;globalThis.displayRows=rows=>{bets=rows;return displayBets()}`,
   context,
 );
+const collapseContext = {};
+vm.runInNewContext(`${collapseSource};globalThis.collapseRows=collapseWindNumberBatches`, collapseContext);
 
 const base = {
   account: "test",
@@ -50,6 +53,20 @@ test("風雲六合台號沿用原始支數，批次合計不再顯示未辨識�
   assert.match(rows[0].displaySelection, /61[\s\S]*2支/);
   assert.match(rows[0].displaySelection, /91[\s\S]*2支/);
   assert.doesNotMatch(rows[0].displaySelection, /未辨識|車/);
+});
+
+test("風雲大樂台號背景同批次會合計網站原始支數，不以金額反推", () => {
+  const collapsed = collapseContext.collapseRows([
+    { ...base, id: "wind|gateway|T105478-002|1", source: "風雲", event: "大樂 / T105478 - 002", playType: "台號", selection: "02", stake: 400, betAmount: 400, carCount: 4 },
+    { ...base, id: "wind|gateway|T105478-002|2", source: "風雲", event: "大樂 / T105478 - 002", playType: "台號", selection: "36", stake: 400, betAmount: 400, carCount: 4 },
+  ]);
+  assert.equal(collapsed.length, 1);
+  assert.equal(collapsed[0].carCount, 8);
+  assert.deepEqual(Array.from(collapsed[0]._windDetails, row => [row.number, row.carCount]), [["02", 4], ["36", 4]]);
+  const rows = context.displayRows(collapsed);
+  assert.equal(rows[0].countLabel, "8支");
+  assert.match(rows[0].displaySelection, /02[\s\S]*4支/);
+  assert.match(rows[0].displaySelection, /36[\s\S]*4支/);
 });
 
 test("車數只移除浮點尾數，不截斷來源真正的細小數", () => {

@@ -8,7 +8,9 @@
     .ledger-calc-body{padding:14px;display:grid;gap:12px;min-width:0;overflow:hidden}
     .ledger-calc-options,.ledger-calc-result{display:grid;gap:12px;min-width:0}
     .ledger-calc-option-game{display:grid;gap:8px;padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.018);min-width:0}
-    .ledger-calc-option-title{font-weight:800;padding-left:8px;border-left:4px solid var(--muted);color:var(--text)}
+    .ledger-calc-option-title{box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;padding:2px 8px;border:0;border-left:4px solid var(--muted);background:transparent;color:var(--text);font:inherit;font-weight:800;text-align:left;cursor:pointer}
+    .ledger-calc-option-title small{color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+    .ledger-calc-option-game:not(.is-open) .ledger-calc-option-grid{display:none}
     .ledger-calc-option-game.calc-game-539 .ledger-calc-option-title{border-color:var(--blue);color:var(--blue)}
     .ledger-calc-option-game.calc-game-six .ledger-calc-option-title{border-color:#c084fc;color:#d8b4fe}
     .ledger-calc-option-game.calc-game-big .ledger-calc-option-title{border-color:var(--yellow);color:var(--yellow)}
@@ -49,6 +51,9 @@
   const options = panel.querySelector('.ledger-calc-options');
   const result = panel.querySelector('.ledger-calc-result');
   const getSaved = () => { try { return JSON.parse(localStorage.getItem('ledgerCalculatorSelectionV2') || '{}'); } catch { return {}; } };
+  const openGamesKey = 'ledgerCalculatorOpenGamesV1';
+  const getOpenGames = () => { try { const value = JSON.parse(localStorage.getItem(openGamesKey) || '[]'); return new Set(Array.isArray(value) ? value.map(String) : []); } catch { return new Set(); } };
+  const saveOpenGames = games => localStorage.setItem(openGamesKey, JSON.stringify([...games]));
   const defaultDivisor = { '正碼': 5300, '全車': 5300, '二星': 5300, '三星': 57000 };
   const divisorFor = name => /^三星\s*[（(]\s*套餐\s*[）)]$/.test(name) ? 57000 : defaultDivisor[name];
   const playRank = name => /^三星/.test(name) ? 3 : /^四星/.test(name) ? 4 : name === '二星' ? 2 : name === '全車' ? 1 : name === '正碼' ? 0 : 5;
@@ -89,13 +94,18 @@
     });
     if (!data.length) return;
     const saved = getSaved();
+    const openGames = getOpenGames();
     const gameOrder = [...new Set(data.map(row => row.game))];
     data.sort((a, b) => gameOrder.indexOf(a.game) - gameOrder.indexOf(b.game) || playRank(a.name) - playRank(b.name));
     const gameGroups = new Map();
     data.forEach(row => { const rows = gameGroups.get(row.game) || []; rows.push(row); gameGroups.set(row.game, rows); });
     options.replaceChildren(...[...gameGroups].map(([game, rows]) => {
-      const group = document.createElement('section'); group.className = `ledger-calc-option-game ${gameClass(game)}`;
-      const title = document.createElement('div'); title.className = 'ledger-calc-option-title'; title.textContent = game;
+      const group = document.createElement('section'); group.className = `ledger-calc-option-game ${gameClass(game)}${openGames.has(game) ? ' is-open' : ''}`;
+      const title = document.createElement('button'); title.type = 'button'; title.className = 'ledger-calc-option-title'; title.setAttribute('aria-expanded', String(openGames.has(game)));
+      const titleText = document.createElement('span'); titleText.textContent = game;
+      const titleState = document.createElement('small'); titleState.textContent = openGames.has(game) ? '收合' : '展開';
+      title.append(titleText, titleState);
+      title.addEventListener('click', () => { if (openGames.has(game)) openGames.delete(game); else openGames.add(game); saveOpenGames(openGames); sync(); });
       const grid = document.createElement('div'); grid.className = 'ledger-calc-option-grid';
       rows.forEach(row => {
         const label = document.createElement('label'); label.className = 'ledger-calc-option'; label.dataset.game = row.game; label.dataset.name = row.name; label.dataset.total = row.total; label.dataset.winning = row.winning;
