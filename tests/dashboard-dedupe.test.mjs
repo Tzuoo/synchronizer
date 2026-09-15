@@ -176,6 +176,24 @@ test("風雲大樂台號以網站列金額去重，並依同一批次收合支�
   assert.doesNotMatch(extension, /stake \* carCount/);
 });
 
+test("風雲離開明細的同一大樂 gateway 父批次仍收合，不合併另一真實批次", () => {
+  const base = {
+    source: "風雲", account: "a0593", placedAt: "2026-09-15T18:18:13+08:00",
+    event: "大樂 / T105478 - 002", playType: "台號", stake: 400,
+    potentialPayout: 400, unitAmount: 400, carCount: 4, betAmount: 400,
+    status: "待結算", reconciled: false, itemNumber: null,
+  };
+  const sameParent = ['02','36'].map((number,index) => ({ ...base,
+    id: `vs968.net|gateway|88|${index + 1}`, selection: number
+  }));
+  const otherBatch = { ...base, id: 'vs968.net|gateway|89|1', selection: '49' };
+  const batches = context.collapseWindNumberBatches([...sameParent,otherBatch]);
+  assert.equal(batches.length, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(Array.from(batches, batch => [batch.betAmount, batch._windDetails.map(detail => detail.number)]))), [
+    [800,['02','36']], [400,['49']]
+  ]);
+});
+
 test("喜網站 DOM 與 gateway 批次一對一配對且保留真實重複批次", () => {
   const base = {
     source: "喜", account: "a0593", placedAt: "2026-08-26T20:26:43+08:00",

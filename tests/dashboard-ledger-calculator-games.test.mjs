@@ -14,7 +14,9 @@ test('三星套餐緊接三星、除數預設57000且結果以摘要和表格呈
   assert.ok(source.includes("ledger-calc-summary"));
   assert.ok(source.includes("ledger-calc-table"));
   assert.ok(source.includes("查看加總過程"));
-  assert.ok(source.includes("['總量',money(total),'']"));
+  assert.match(source, /\['總量',\s*money\(total\),\s*''\]/);
+  assert.ok(source.includes("ledger-calc-option-game"));
+  assert.ok(source.includes("ledger-calc-option-grid"));
 });
 
 test('自訂總和讀取所有盤口，以遊戲與玩法保存並分開計算', () => {
@@ -25,6 +27,11 @@ test('自訂總和讀取所有盤口，以遊戲與玩法保存並分開計算',
   assert.ok(source.includes('...getSaved()'));
   assert.ok(source.includes('if (!data.length) return'));
   assert.ok(source.includes("'三星': 57000"));
+  assert.ok(source.includes('const gameGroups = new Map()'));
+  assert.ok(source.includes('gameGroups.get(row.game)'));
+  assert.ok(source.includes('calc-game-539'));
+  assert.ok(source.includes('@media(max-width:640px)'));
+  assert.ok(source.includes('grid-template-columns:minmax(0,1fr)'));
 });
 
 test('提示列不參與總帳與計算，真實零金額玩法不依金額排除', () => {

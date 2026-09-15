@@ -32,3 +32,18 @@ test('風雲完整背景六合台號清單還原來源倒序項次與支數，�
   rows[0].bet_type=2;
   assert.equal(context.scrapeVs968Json(JSON.stringify({total:2,rows}))[0].carCount,null);
 });
+
+test('風雲離開明細時，大樂同一 gateway 父批次的台號仍保留分區、兩位數與支數',()=>{
+  const context={location:{hostname:'www.vs968.net'},rootDomain:()=> 'vs968.net',HOST_NAMES:{},SITE_NAMES:{'vs968.net':'風雲'},enrichedBet:(a,b)=>({...a,...b})};
+  vm.runInNewContext(source,context);
+  const row={id:88,casino:2,bet_type:1,created_at:'2026-09-15 18:18:13',game:{seq:'T105478'},group:{id:12,no:2},details:[
+    {id:1,play:4,content:'2',money:400,odds:11.6},
+    {id:2,play:4,content:'36',money:400,odds:10}
+  ]};
+  const bets=context.scrapeVs968Json(JSON.stringify({total:2,rows:[row]}));
+  assert.deepEqual(Array.from(bets,b=>[b.event,b.playType,b.selection,b.carCount,b.itemNumber]),[
+    ['大樂 / T105478 - 002','台號','02',4,null],
+    ['大樂 / T105478 - 002','台號','36',4,null]
+  ]);
+  assert.ok(bets.every(b=>b.rawText.includes('"gatewayRowId":88')));
+});

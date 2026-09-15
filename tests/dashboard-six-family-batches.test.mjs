@@ -4,7 +4,7 @@ import test from "node:test";
 import vm from "node:vm";
 
 const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-const countSource = html.match(/function getCountLabel[\s\S]*?(?=\nfunction formatStructuredSelection)/)?.[0];
+const countSource = html.match(/function formatCount[\s\S]*?(?=\nfunction formatStructuredSelection)/)?.[0];
 const source = html.match(/function displayBets[\s\S]*?(?=\nfunction draw)/)?.[0];
 assert.ok(countSource && source, "displayBets and count label must be present");
 
@@ -17,7 +17,7 @@ const context = {
   money: value => `$${Number(value)}`,
 };
 vm.runInNewContext(
-  `let bets=[];${countSource};${source};globalThis.displayRows=rows=>{bets=rows;return displayBets()}`,
+  `let bets=[];${countSource};${source};globalThis.getCountLabel=getCountLabel;globalThis.displayRows=rows=>{bets=rows;return displayBets()}`,
   context,
 );
 
@@ -50,6 +50,13 @@ test("風雲六合台號沿用原始支數，批次合計不再顯示未辨識�
   assert.match(rows[0].displaySelection, /61[\s\S]*2支/);
   assert.match(rows[0].displaySelection, /91[\s\S]*2支/);
   assert.doesNotMatch(rows[0].displaySelection, /未辨識|車/);
+});
+
+test("車數只移除浮點尾數，不截斷來源真正的細小數", () => {
+  assert.equal(context.getCountLabel({ carCount: 2.4000000000000004 }), "2.4車");
+  assert.equal(context.getCountLabel({ carCount: 0.30000000000000004 }), "0.3車");
+  assert.equal(context.getCountLabel({ carCount: 0.0625 }), "0.0625車");
+  assert.equal(context.getCountLabel({ carCount: 0.123456 }), "0.123456車");
 });
 
 test("風雲目前六批六合台號可依原始支數回算各批總額", () => {
