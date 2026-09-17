@@ -8,7 +8,15 @@ const extension = await readFile(new URL("../../RuntimeData/同步器擴充功�
 const source = html.match(/function isDeletedBet[\s\S]*?(?=\nfunction displayBets)/)?.[0];
 assert.ok(source, "dashboard dedupe functions must be present");
 const context = {};
-vm.runInNewContext(`${source};globalThis.dedupeExactBets=dedupeExactBets;globalThis.collapseWindNumberBatches=collapseWindNumberBatches`, context);
+vm.runInNewContext(`${source};globalThis.isDeletedBet=isDeletedBet;globalThis.dedupeExactBets=dedupeExactBets;globalThis.collapseWindNumberBatches=collapseWindNumberBatches`, context);
+
+test('刪單只依明確狀態，不掃描下注內容或操作文字', () => {
+  const base = { status: '待結算', rawText: '台號 02　刪單　取消　新增備註', selection: '取消連碰', event: '刪單說明', note: '可取消後重選' };
+  assert.equal(context.isDeletedBet(base), false);
+  assert.equal(context.isDeletedBet({ ...base, status: '已刪單' }), true);
+  assert.equal(context.isDeletedBet({ ...base, status: '已撤單' }), true);
+  assert.equal(context.isDeletedBet({ ...base, deleted: true }), true);
+});
 
 test('喜特殊包牌兩組完整一致才跨來源一對一配對，保留網站名稱', () => {
   const base = { source: '喜', account: 'test', placedAt: '2026-09-02T18:11:34+08:00', betAmount: 23800, status: '待結算' };

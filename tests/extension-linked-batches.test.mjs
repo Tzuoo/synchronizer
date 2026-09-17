@@ -37,6 +37,9 @@ for (const host of ['hyp98.com', '188hot.net', 'bnd139.com', 'umh693.com', 'and5
 }
 test('連柱碰依網站星數及狀態，不把缺少金額欄位的內容猜成有效批次', () => {
   const scope = context('hyp98.com');
+  assert.equal(scope.orderStatusFromText('台號 02　刪單　取消　新增備註'), '待結算');
+  assert.equal(scope.orderStatusFromText('（已刪單）'), '已刪單');
+  assert.equal(scope.orderStatusFromText('狀態：已撤單'), '已取消');
   for (const play of ['二星', '四星']) {
     const row = scope.scrape188Orders(page('', play))[0];
     assert.equal(row.playType, `${play}連柱碰`);
