@@ -14,6 +14,7 @@ function scope() {
   const ctx = {location:{hostname:'w1.pee688.com'},rootDomain:()=> 'pee688.com',
     window:{addEventListener(){}},reportActualAccount:()=> 'test-account',
     gameSectionFromText:s=>s.includes('【539】')?'539':'',
+    isExplicitTrue:v=>v===true||v===1||String(v??'').trim()==='1',
     eventWithGameSection:(g,p)=>`${g} / ${p}`,enrichedBet:(b,e)=>({...b,...e})};
   vm.runInNewContext(parser,ctx);return ctx;
 }
@@ -25,6 +26,8 @@ test('航海套餐保留原名項次完整兩組及網站金額；重讀 ID 穩�
   assert.equal(b.id,c.parseAmcPackage(d).id);
   assert.notEqual(b.id,c.parseAmcPackage({...d,id:'other-id'}).id);
   assert.equal(c.parseAmcPackage({...d,deleted:true}).status,'已刪單');
+  assert.equal(c.parseAmcPackage({...d,deleted:'1'}).status,'已刪單');
+  assert.equal(c.parseAmcPackage({...d,deleted:'0'}).status,'待結算');
   for(const patch of [{parts:[]},{betAmount:1},{gameText:''},{date:''},{itemNumber:'x'}])
     assert.equal(c.parseAmcPackage({...d,...patch}),null);
 });
