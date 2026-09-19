@@ -86,6 +86,17 @@ test("背景分頁由擴充鬧鐘喚醒明細與總帳輪詢", () => {
   assert.match(content, /pollSharedLedgerBackground\(\)/);
 });
 
+test("前景操作時讓網站下單優先，背景讀取與隱藏框架改為閒置後每分鐘補讀", () => {
+  assert.match(content, /const FOREGROUND_OPERATION_GRACE_MS = 30_000/);
+  assert.match(content, /function shouldDeferBackgroundWork\(\)/);
+  assert.match(content, /shouldDeferBackgroundWork\(\) \|\|/);
+  assert.match(content, /setInterval\(pollLearnedDetail, 60000\)/);
+  assert.match(content, /setInterval\(\(\) => \{[\s\S]*?\}, 60000\)/);
+  assert.match(pageHook, /let detailPollBusy = false/);
+  assert.match(pageHook, /!lastRequest \|\| detailPollBusy/);
+  assert.match(pageHook, /finally \{\s*detailPollBusy = false/);
+});
+
 test("共版 Vuex 總帳保留網站原始盤口期數玩法與順序", async () => {
   const functions = pageHook.match(/let sharedLedgerBusy = false;[\s\S]*?(?=\n  const publish =)/)?.[0];
   assert.ok(functions);
