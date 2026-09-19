@@ -54,7 +54,7 @@
   const openGamesKey = 'ledgerCalculatorOpenGamesV1';
   const getOpenGames = () => { try { const value = JSON.parse(localStorage.getItem(openGamesKey) || '[]'); return new Set(Array.isArray(value) ? value.map(String) : []); } catch { return new Set(); } };
   const saveOpenGames = games => localStorage.setItem(openGamesKey, JSON.stringify([...games]));
-  const defaultDivisor = { '正碼': 5300, '全車': 5300, '二星': 5300, '三星': 57000 };
+  const defaultDivisor = { '正碼': 5300, '全車': 5300, '二星': 5300, '三星': 57000, '四星': 750000 };
   const divisorFor = name => /^三星\s*[（(]\s*套餐\s*[）)]$/.test(name) ? 57000 : defaultDivisor[name];
   const playRank = name => /^三星/.test(name) ? 3 : /^四星/.test(name) ? 4 : name === '二星' ? 2 : name === '全車' ? 1 : name === '正碼' ? 0 : 5;
   const money = value => '$' + Math.round(Number(value) || 0).toLocaleString('en-US');
