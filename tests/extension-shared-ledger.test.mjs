@@ -76,8 +76,11 @@ test("風雲與喜不建立第二個 SPA 並由網站 Vuex 背景取得總帳", 
 
 test("背景分頁由擴充鬧鐘喚醒明細與總帳輪詢", () => {
   assert.ok(manifest.permissions.includes("alarms"));
+  assert.ok(manifest.permissions.includes("webNavigation"));
   assert.match(background, /synchronizer-background-poll/);
-  assert.match(background, /chrome\.tabs\.sendMessage\(tab\.id, \{ type: "SYNC_BACKGROUND_TICK" \}\)/);
+  assert.match(background, /async function wakeBackgroundFrames/);
+  assert.match(background, /chrome\.webNavigation\.getAllFrames\(\{ tabId: tab\.id \}\)/);
+  assert.match(background, /chrome\.tabs\.sendMessage\(tab\.id, message, \{ frameId \}\)/);
   assert.match(content, /message\?\.type !== "SYNC_BACKGROUND_TICK"/);
   assert.match(content, /pollLearnedDetail\(\)/);
   assert.match(content, /pollSharedLedgerBackground\(\)/);
