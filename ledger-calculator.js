@@ -56,6 +56,7 @@
   const saveOpenGames = games => localStorage.setItem(openGamesKey, JSON.stringify([...games]));
   const defaultDivisor = { '正碼': 5300, '全車': 5300, '二星': 5300, '三星': 57000, '四星': 750000 };
   const divisorFor = name => /^三星\s*[（(]\s*套餐\s*[）)]$/.test(name) ? 57000 : defaultDivisor[name];
+  const savedDivisorFor = (saved, name) => { const fallback = divisorFor(name); return (saved === '' && (fallback === 57000 || fallback === 750000) ? fallback : saved) ?? fallback ?? ''; };
   const playRank = name => /^三星/.test(name) ? 3 : /^四星/.test(name) ? 4 : name === '二星' ? 2 : name === '全車' ? 1 : name === '正碼' ? 0 : 5;
   const money = value => '$' + Math.round(Number(value) || 0).toLocaleString('en-US');
   const gameClass = game => game === '539' ? 'calc-game-539' : game === '六合' ? 'calc-game-six' : game === '大樂' ? 'calc-game-big' : '';
@@ -110,7 +111,7 @@
       rows.forEach(row => {
         const label = document.createElement('label'); label.className = 'ledger-calc-option'; label.dataset.game = row.game; label.dataset.name = row.name; label.dataset.total = row.total; label.dataset.winning = row.winning;
         const prior = saved[JSON.stringify([row.game, row.name])] || {};
-        const divisor = (prior.divisor === '' && divisorFor(row.name) === 57000 ? 57000 : prior.divisor) ?? divisorFor(row.name) ?? '';
+        const divisor = savedDivisorFor(prior.divisor, row.name);
         label.innerHTML = '<span class="ledger-calc-option-main"><input type="checkbox"><span></span></span><input type="number" min="0" step="1" placeholder="除數">';
         label.querySelector('.ledger-calc-option-main span').textContent = row.name;
         const checkbox = label.querySelector('input[type=checkbox]'); checkbox.value = row.name; checkbox.checked = !!prior.checked;

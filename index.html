@@ -25,7 +25,7 @@ main{max-width:1500px;margin:auto;padding:12px}.metrics{display:grid;grid-templa
 <section id="ledgerDemo" class="ledger-demo" hidden></section>
 <section id="betsPanel" class="panel"><div class="panel-head"><div><b>下注資料</b><small id="count"></small><span class="resize-hint">拖曳表頭藍灰色分隔線可調整寬度</span></div><div class="filters"><input id="query" placeholder="搜尋帳號、網站或內容"><label class="desktop-font-control">資料字體大小<input id="desktopFontSize" type="range" min="12" max="24" step="1" value="16"></label><label class="mobile-width-control">數值格寬度<input id="mobileCellWidth" type="range" min="88" max="180" step="2" value="104"></label><label class="mobile-width-control">資料字體大小<input id="mobileFontSize" type="range" min="13" max="22" step="1" value="15"></label></div></div><div class="table-wrap"><table id="betsTable"><colgroup><col style="width:52px"><col><col><col><col><col><col><col></colgroup><thead><tr><th>項次</th><th>投注內容</th><th>單位金額</th><th>碰數／車數／支數</th><th>下注總額</th><th>時間／網站</th><th>帳號</th><th>對帳</th></tr></thead><tbody id="rows"></tbody></table></div></section></main>
 <script src="remote-diagnostics.js"></script>
-<script src="ledger-calculator.js?build=96"></script>
+<script src="ledger-calculator.js?build=99"></script>
 <script>
 const lock=document.querySelector('#lock'),lockForm=document.querySelector('#lockForm'),lockPassword=document.querySelector('#lockPassword'),lockError=document.querySelector('#lockError');
 const API_ROOT="https://live-bet-reconciliation.tsoyis0520.chatgpt.site/api",API=`${API_ROOT}/bets`,PAGE_PARAMS=new URLSearchParams(location.search),IS_LEDGER_VIEW=PAGE_PARAMS.get('view')==='ledger'||PAGE_PARAMS.get('ledger-demo')==='1',IS_LOCAL_PREVIEW=['localhost','127.0.0.1'].includes(location.hostname);
