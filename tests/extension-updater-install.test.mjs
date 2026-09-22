@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 const installer = fileURLToPath(new URL('../../RuntimeData/Updater/Install-UpdateTask.ps1', import.meta.url));
 const source = await readFile(installer, 'utf8');
 const packageBuilder = fileURLToPath(new URL('../../發布工具/Build-ExtensionUpdate.ps1', import.meta.url));
+const manualUpdater = fileURLToPath(new URL('../../RuntimeData/雜/立即更新同步器.cmd', import.meta.url));
 
 test('updater and installer remain ASCII-safe and parse in real Windows PowerShell 5.1', {skip: process.platform !== 'win32'}, async () => {
   const updater = fileURLToPath(new URL('../../RuntimeData/Updater/Update-Synchronizer.ps1', import.meta.url));
@@ -17,6 +18,15 @@ test('updater and installer remain ASCII-safe and parse in real Windows PowerShe
     assert.equal(result.status, 0, result.stdout + result.stderr);
   }
   assert.ok(source.indexOf('Parser]::ParseFile') < source.indexOf('$task = Register-SynchronizerUpdateTask'));
+});
+
+test('manual update bypasses stale Pages metadata and packages use versioned URLs', async () => {
+  const manual = await readFile(manualUpdater, 'utf8');
+  const builder = await readFile(packageBuilder, 'utf8');
+  assert.match(manual, /raw\.githubusercontent\.com\/Tzuoo\/synchronizer\/main\/extension-version\.json\?manual=/);
+  assert.match(manual, /-VersionUrl/);
+  assert.match(builder, /synchronizer-extension\.zip\?v=/);
+  assert.match(builder, /EscapeDataString/);
 });
 
 test('extension package launcher remains ASCII-safe for Windows PowerShell paths', async () => {

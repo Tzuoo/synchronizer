@@ -7,7 +7,7 @@ test('測試集中 tests，正式更新入口與既有網址路徑不搬動', as
   assert.equal((await readdir(web)).filter(name => name.endsWith('.test.mjs')).length, 0);
   for (const name of ['index.html','ledger-calculator.js','remote-diagnostics.js','version.json','extension-version.json','synchronizer-extension.zip']) await access(new URL(name, web));
   const version = JSON.parse((await readFile(new URL('extension-version.json', web),'utf8')).replace(/^\uFEFF/,''));
-  assert.equal(version.url, 'https://tzuoo.github.io/synchronizer/synchronizer-extension.zip');
+  assert.match(version.url, /^https:\/\/tzuoo\.github\.io\/synchronizer\/synchronizer-extension\.zip\?v=\d+\.\d+\.\d+$/);
 });
 
 test('打包入口與發布工具皆指向集中後的打包腳本', async () => {
