@@ -47,6 +47,8 @@ test('隔離本機服務：中文快取、擴充預檢、来源限制與同前�
   assert.equal((await request('/')).data, 'test page');
   assert.equal((await request('/..%2fweb-old/outside.txt')).status, 404);
   assert.equal((await request('/', 'GET', { host: `evil.test:${port}` })).status, 400);
+  const oversizedHeader = await request('/__sync/health', 'GET', { 'x-fill': 'x'.repeat(17000) }).then(value => value.status, error => error.code);
+  assert.ok([400, 'ECONNRESET'].includes(oversizedHeader), 'oversized header must not be accepted');
   assert.equal((await request('/__sync/bets', 'GET', { origin: 'https://evil.test' })).status, 400);
   assert.equal((await request('/__sync/bets', 'GET', { origin: 'null' })).status, 400);
   const extension = `chrome-extension://${'a'.repeat(32)}`;
@@ -58,10 +60,36 @@ test('隔離本機服務：中文快取、擴充預檢、来源限制與同前�
   const encoded = Buffer.from(JSON.stringify({ bets })).toString('base64');
   assert.equal((await request('/__sync/cache', 'POST', { origin: extension, 'sec-fetch-site': 'cross-site', 'x-sync-encoding': 'base64' }, encoded)).status, 200);
   assert.deepEqual(JSON.parse((await request('/__sync/bets')).data).bets, bets);
+  const beforeFailure=JSON.parse((await request('/__sync/bets')).data);
+  assert.equal(beforeFailure.freshness,'fresh');
+  assert.ok(beforeFailure.lastSuccessAt);
+  const failedStatus=Buffer.from(JSON.stringify({refreshOk:false,errorCode:'REMOTE_FETCH_FAILED'})).toString('base64');
+  assert.equal((await request('/__sync/cache','POST',{'x-sync-encoding':'base64'},failedStatus)).status,200);
+  const afterFailure=JSON.parse((await request('/__sync/bets')).data);
+  assert.deepEqual(afterFailure.bets,bets);
+  assert.equal(afterFailure.lastSuccessAt,beforeFailure.lastSuccessAt);
+  assert.equal(afterFailure.freshness,'stale');
+  assert.equal(afterFailure.lastErrorCode,'REMOTE_FETCH_FAILED');
+  assert.equal((await request('/__sync/cache','POST',{'x-sync-encoding':'base64'},encoded)).status,200);
+  const recovered=JSON.parse((await request('/__sync/bets')).data);
+  assert.equal(recovered.freshness,'fresh');
+  assert.equal(recovered.lastErrorCode,null);
   assert.equal((await request('/__sync/cache', 'POST', {}, '{"bets":[]}')).status, 400);
   assert.equal((await request('/__sync/cache', 'POST', { origin: 'https://evil.test', 'x-sync-encoding': 'base64' }, encoded)).status, 400);
   assert.deepEqual(JSON.parse((await request('/__sync/bets')).data).bets, bets);
-  const rows = [{ id: 'test', playType: '正碼', totalAmount: 760 }];
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const rows = [{ id: 'test', date: today, playType: '正碼', totalAmount: 760 }];
   assert.equal((await request('/__sync/ledger-cache', 'POST', { 'x-sync-encoding': 'base64' }, Buffer.from(JSON.stringify({ rows })).toString('base64'))).status, 200);
   assert.deepEqual(JSON.parse((await request('/__sync/ledger', 'GET', { origin: `http://localhost:${port}` })).data).rows, rows);
+  const mixed = [...rows, { id: 'old', date: '2020-01-01', totalAmount: 999 }];
+  assert.equal((await request('/__sync/ledger-cache', 'POST', { 'x-sync-encoding': 'base64' }, Buffer.from(JSON.stringify({ rows: mixed })).toString('base64'))).status, 200);
+  assert.deepEqual(JSON.parse((await request('/__sync/ledger')).data).rows, rows);
+  const slow=net.createConnection({host:'127.0.0.1',port});
+  await once(slow,'connect');
+  slow.write(`GET /__sync/health HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nX-Slow: `);
+  const started=Date.now();
+  try {
+    assert.equal((await request('/__sync/health')).status,200);
+    assert.ok(Date.now()-started<2500,'a stalled header must not block other loopback requests for 15 seconds');
+  } finally { slow.destroy(); }
 });

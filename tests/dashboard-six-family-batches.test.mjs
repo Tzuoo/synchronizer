@@ -43,6 +43,15 @@ test("只有風雲六合 gateway 明細會合併成台號批次", () => {
   assert.equal(rows[0].displayEvent, "台號");
 });
 
+test('M02 六合顯示批次保留每筆舊新 ID，對帳不得漏掉底層列', () => {
+  const rows = context.displayRows([
+    { ...base, id: 'old-1', ids: ['old-1', 'new-1'], source: '風雲', event: '六合 / 台號', playType: '台號', selection: '台號 10' },
+    { ...base, id: 'old-2', ids: ['old-2', 'new-2'], source: '風雲', event: '六合 / 台號', playType: '台號', selection: '台號 11' },
+  ]);
+  assert.equal(rows.length, 1);
+  assert.deepEqual(Array.from(rows[0].ids), ['old-1', 'new-1', 'old-2', 'new-2']);
+});
+
 test("風雲六合台號沿用原始支數，批次合計不再顯示未辨識或車數", () => {
   const rows = context.displayRows([
     { ...base, id: "wind-1|table|x|1", source: "風雲", event: "六合 / 台號", playType: "台號", selection: "台號 61", stake: 200, betAmount: 400, carCount: 2 },

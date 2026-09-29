@@ -60,6 +60,7 @@
   const playRank = name => /^三星/.test(name) ? 3 : /^四星/.test(name) ? 4 : name === '二星' ? 2 : name === '全車' ? 1 : name === '正碼' ? 0 : 5;
   const money = value => '$' + Math.round(Number(value) || 0).toLocaleString('en-US');
   const gameClass = game => game === '539' ? 'calc-game-539' : game === '六合' ? 'calc-game-six' : game === '大樂' ? 'calc-game-big' : '';
+  const rawAmountsFor = row => ({ total: Number(row.dataset.totalRaw), winning: Number(row.dataset.winningRaw) });
 
   const refresh = () => {
     const selected = [...options.querySelectorAll('input[type=checkbox]:checked')].map(input => {
@@ -86,14 +87,19 @@
     }
   };
 
+  function clearCalculatorLiveData() {
+    options.replaceChildren();
+    result.textContent = '尚未選擇玩法';
+  }
+
   const sync = () => {
     const data = [...demo.querySelectorAll('.ledger-section.primary .ledger-game')].flatMap(block => {
       const game = block.querySelector('.ledger-title b')?.textContent.trim();
-      return [...block.querySelectorAll('tbody tr')].map(row => [...row.cells].map(cell => cell.textContent.trim()))
-        .filter(cells => game && cells.length >= 5 && cells[0] !== '盤口小計' && cells[0].replace(/\s/g, '') !== '無下注資料')
-        .map(cells => ({ game, name: cells[0], total: Number(cells[2].replace(/[^0-9.-]/g, '')) || 0, winning: Number(cells[4].replace(/[^0-9.-]/g, '')) || 0 }));
+      return [...block.querySelectorAll('tbody tr')].map(row => ({ row, cells: [...row.cells].map(cell => cell.textContent.trim()) }))
+        .filter(({ cells }) => game && cells.length >= 5 && cells[0] !== '盤口小計' && cells[0].replace(/\s/g, '') !== '無下注資料')
+        .map(({ row, cells }) => ({ game, name: cells[0], ...rawAmountsFor(row) }));
     });
-    if (!data.length) return;
+    if (!data.length) { clearCalculatorLiveData(); return; }
     const saved = getSaved();
     const openGames = getOpenGames();
     const gameOrder = [...new Set(data.map(row => row.game))];

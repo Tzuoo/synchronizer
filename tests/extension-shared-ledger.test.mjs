@@ -118,6 +118,7 @@ test("共版 Vuex 總帳保留網站原始盤口期數玩法與順序", async ()
     },
   };
   const sharedContext = {
+    AbortController, DOMException, setTimeout, clearTimeout,
     document: {
       querySelectorAll: () => [{ __vue__: { $store: store, $parent: null } }],
       documentElement: { dataset: {} },

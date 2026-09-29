@@ -15,7 +15,7 @@ test("明細回應在內容腳本晚載入時可由 page-hook 重送", () => {
 });
 
 test("補送只使用已取得的明細回應，不新增網站讀取", () => {
-  const fragment = hook.match(/const publish = \(url, method, body, contentType, response, headers = \{\}\) => \{[\s\S]*?(?=\n  const nativeFetch)/)?.[0];
+  const fragment = hook.match(/const MAX_OBSERVED_RESPONSE_CHARS =[\s\S]*?(?=\n  const nativeFetch)/)?.[0];
   assert.ok(fragment, "page-hook 明細發布器必須存在");
   const posted = [];
   const context = {

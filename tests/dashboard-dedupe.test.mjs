@@ -18,6 +18,34 @@ test('刪單只依明確狀態，不掃描下注內容或操作文字', () => {
   assert.equal(context.isDeletedBet({ ...base, deleted: true }), true);
 });
 
+test('H1 新舊 source-item ID 共存時，以網站原始秒數及內容視為同一筆', () => {
+  const base = {
+    source: '16', account: 'you320', event: '539 / 三星連碰', playType: '三星連碰',
+    selection: '01,02,03', stake: 500, potentialPayout: 5000, unitAmount: 500,
+    combinationCount: 10, carCount: null, betAmount: 5000, status: '待結算', reconciled: false,
+  };
+  const oldRow = { ...base, id: 'device|site|you320|source-item|1|2026-09-27T19:00:00.999+08:00|三星連碰|01,02,03|0', placedAt: '2026-09-27T19:00:00.999+08:00' };
+  const newRow = { ...base, id: 'device|site|you320|source-item|1|2026-09-27T19:00:00+08:00|三星連碰|01,02,03|0', placedAt: '2026-09-27T19:00:00+08:00' };
+  const result = context.dedupeExactBets([oldRow, newRow]);
+  assert.equal(result.length, 1);
+  assert.deepEqual(Array.from(result[0].ids), [oldRow.id, newRow.id]);
+});
+
+test('C-03 海勝2同秒同內容但不同項次的真實批次必須保留兩筆', () => {
+  const base = {
+    source: '海勝2', account: '0593', placedAt: '2026-09-28T20:00:00+08:00',
+    event: '539 / 三星連碰', playType: '三星連碰', selection: '03,25,33,35,38',
+    stake: 500, potentialPayout: 5000, unitAmount: 500, combinationCount: 10,
+    carCount: null, betAmount: 5000, status: '待結算', reconciled: false,
+  };
+  const first = { ...base, id: 'and539.com|0593|source-item|1|2026-09-28T20:00:00+08:00|三星連碰|03,25,33,35,38|0', itemNumber: '1' };
+  const second = { ...base, id: 'and539.com|0593|source-item|2|2026-09-28T20:00:00+08:00|三星連碰|03,25,33,35,38|0', itemNumber: '2' };
+  const result = context.dedupeExactBets([first, second]);
+  assert.equal(result.length, 2);
+  assert.deepEqual(Array.from(result, row => row.itemNumber), ['1', '2']);
+  assert.ok(result.every(row => row.ids.length === 1));
+});
+
 test('喜特殊包牌兩組完整一致才跨來源一對一配對，保留網站名稱', () => {
   const base = { source: '喜', account: 'test', placedAt: '2026-09-02T18:11:34+08:00', betAmount: 23800, status: '待結算' };
   const dom = { ...base, id: 'kd998.net|kd-batch|F-test|1', itemNumber: '1', playType: '特殊包牌', event: '特殊包牌', selection: '特殊包牌｜visibility visibility_off 連二星:\n01,02,03\n04,06\n組三星:\n05,15,25,35｜下注金額 23800' };

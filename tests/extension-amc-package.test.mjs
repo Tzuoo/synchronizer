@@ -32,6 +32,17 @@ test('航海套餐保留原名項次完整兩組及網站金額；重讀 ID 穩�
     assert.equal(c.parseAmcPackage({...d,...patch}),null);
 });
 
+test('套餐來源刪單旗標只接受明確 true、1 與字串 1', () => {
+  const start = hook.indexOf('function isExplicitDeleteFlag');
+  const end = hook.indexOf('\n  // Local structural', start + 1);
+  assert.ok(start >= 0 && end > start, 'page hook 必須在最初來源保留明確布林語意');
+  const context = {};
+  vm.runInNewContext(`${hook.slice(start, end)};globalThis.isExplicitDeleteFlag=isExplicitDeleteFlag`, context);
+  for (const value of [false, 0, '0']) assert.equal(context.isExplicitDeleteFlag(value), false);
+  for (const value of [true, 1, '1']) assert.equal(context.isExplicitDeleteFlag(value), true);
+  assert.match(hook, /deleted:\s*isExplicitDeleteFlag\(master\.IsDelete\)/);
+});
+
 test('航海套餐從同源 gmenu 讀實際帳號，缺值或其他來源不猜測',()=>{
   const c=scope();
   c.reportActualAccount=()=>'';
@@ -62,7 +73,7 @@ test('套餐背景讀取只呼叫已確認唯讀 API，不操作視窗或刪單'
     Date:{now:()=>now},
     document:{documentElement:{dataset:{}},body:{innerText:'【539】 第 C115217 期\n'+table.innerText},
       querySelectorAll:()=>ready?[cell]:[],createElement:()=>({set innerHTML(x){this.textContent=x;}})},
-    XMLHttpRequest:xhr,setInterval:(f,ms)=>timers.push({f,ms}),setTimeout,clearTimeout,URL,Headers};
+    XMLHttpRequest:xhr,setInterval:(f,ms)=>timers.push({f,ms}),setTimeout,clearTimeout,AbortController,DOMException,URL,Headers};
   ctx.window={addEventListener(){},postMessage:x=>messages.push(x),fetch(){},
     ko:{contextFor:()=>({$parent:master,$data:{OrderData:'',Bet:10,TotCnt:2380,TotBet:23800}})},
     XI:{WinNOData:{GetOrderData:()=>sample().parts[0].selection}},

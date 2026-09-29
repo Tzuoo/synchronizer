@@ -106,6 +106,6 @@ test('移除未使用入口但保留仍被呼叫的分組解析與資料保護',
   assert.equal((source.match(/document\.createElement\("iframe"\)/g) || []).length, 1);
   const background = await readFile(new URL('background.js', root), 'utf8');
   assert.doesNotMatch(background, /delete detectedAccounts\["kd998.net"\]/);
-  assert.match(background, /key === "kd998.net" \|\| key.endsWith\(".kd998.net"\)/);
+  assert.match(background, /key === ['"]kd998\.net['"] \|\| key\.endsWith\(['"]\.kd998\.net['"]\)/);
   assert.match(background, /legacy\?\.uploadAt/);
 });

@@ -9,6 +9,7 @@ const content = await read('content.js');
 const manifest = JSON.parse(await read('manifest.json'));
 const shared = await read('src/content/shared.js');
 const ledger = await read('src/content/ledger.js');
+const umhParser = await read('src/content/parsers-umh.js');
 
 test('海勝2 在主頁與子框架注入兩個入口，並沿用海勝解析器', async () => {
   for (const entry of manifest.content_scripts.filter(item => item.matches.some(match => match.includes('and539.com')))) {
@@ -44,4 +45,35 @@ test('兩站共用 A07 格式，保留獨立名稱、盤口、原始玩法及數
     ]);
     assert.equal(scope.parseA07LedgerResponse('not-json').length, 0);
   }
+});
+
+test('海勝2 大樂第一批台號單碰只有一個號碼時仍保留來源批次', () => {
+  const scope = {
+    location: { hostname: 'w2.and539.com' },
+    document: { documentElement: { dataset: {} } },
+    chrome: { runtime: { getManifest: () => ({ version: 'test' }) } },
+    scrapeCommonPillarRows: () => [],
+  };
+  vm.runInNewContext(shared + '\n' + umhParser, scope);
+  const batch = '1 台號\n單碰\n2026-09-25\n19:11:30\n09 25 76 1300 0 312 988\n新增備註';
+  const page = {
+    body: { innerText: `【大樂】 第 B115001 期\n${batch}\n單項金額總計 1300 0 312 988` },
+    querySelectorAll: selector => selector === 'td,th'
+      ? [{ innerText: '1', closest: () => ({ innerText: batch }) }]
+      : [],
+  };
+  const rows = scope.scrapeUmhOrders(page);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].source, '海勝2');
+  assert.equal(rows[0].event, '大樂 / 台號單碰');
+  assert.equal(rows[0].playType, '台號單碰');
+  assert.equal(rows[0].itemNumber, '1');
+  assert.equal(rows[0].selection, '09');
+  assert.equal(rows[0].betAmount, 1300);
+  assert.equal(rows[0].placedAt, '2026-09-25T19:11:30+08:00');
+  assert.equal(scope.scrapeUmhOrders(page)[0].id, rows[0].id, '重讀同批使用相同 ID');
+  assert.equal(scope.scrapeUmhOrders({ ...page, body: { innerText: page.body.innerText.replace('09 25 76 1300', '09 25 76 1400') } }).length, 0,
+    '明細金額和來源小計不一致時不可猜測補單');
+  assert.equal(scope.scrapeUmhOrders({ ...page, body: { innerText: page.body.innerText.replace('【大樂】', '【539】') } }).length, 0,
+    '不可將大樂的單號規則套到 539');
 });
