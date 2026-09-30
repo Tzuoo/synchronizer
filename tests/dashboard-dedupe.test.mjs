@@ -62,6 +62,24 @@ test('喜特殊包牌兩組完整一致才跨來源一對一配對，保留網�
   }
 });
 
+test('喜二星連碰撤單的 DOM 與 gateway 表示同批時保留網站原名及撤單；真實雙批不合併', () => {
+  const base = { source: '喜', account: 'a0593', placedAt: '2026-09-30T19:38:51+08:00', betAmount: 10000, reconciled: false };
+  const dom = { ...base, id: 'kd998.net|kd-batch|F-test|6', itemNumber: '6', event: '二星連碰', playType: '二星連碰', selection: '二星連碰｜visibility visibility球號03,23,25,36,37 點此查看下注內容｜下注金額 10000', status: '待結算' };
+  const gateway = { ...base, id: 'kd998.net|kd-gateway-batch|123', event: '二星', playType: '二星', selection: '二星｜3&23&25&36&37｜下注金額 10000｜車數 未辨識', status: '已撤單' };
+  for (const rows of [[dom, gateway], [gateway, dom]]) {
+    const result = context.dedupeExactBets(rows);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].playType, '二星連碰');
+    assert.equal(result[0].itemNumber, '6');
+    assert.equal(result[0].status, '已撤單');
+    assert.deepEqual(Array.from(result[0].ids), rows.map(row => row.id));
+  }
+  assert.equal(context.dedupeExactBets([dom, { ...dom, id: 'kd998.net|kd-batch|F-test|5' }, gateway]).length, 2);
+  for (const changed of [{ account: 'other' }, { betAmount: 9999 }, { placedAt: '2026-09-30T19:38:52+08:00' }, { selection: '二星｜3&23&25&36&38｜下注金額 10000' }]) {
+    assert.equal(context.dedupeExactBets([dom, { ...gateway, ...changed }]).length, 2);
+  }
+});
+
 function wind(id, selection) {
   return {
     id,

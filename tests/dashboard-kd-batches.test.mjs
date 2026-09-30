@@ -27,6 +27,16 @@ test('喜特殊包牌完整保留第二組號碼，不套車數格式或顯示�
   assert.match(output, /05,15,25,35/);
   assert.doesNotMatch(output, /visibility|未辨識|下注金額/);
 });
+
+test('喜既有二星連碰資料不顯示圖示文字或提示文案', () => {
+  assert.match(html, /\.bet-line\s*>\s*span:only-child\s*\{\s*grid-column:1\/-1/);
+  const output = context.formatStructuredSelection('二星連碰', '二星連碰｜visibility visibility球號03,23,25,36,37 點此查看下注內容｜下注金額 10000', { source: '喜' });
+  assert.match(output, /03,23,25,36,37/);
+  assert.doesNotMatch(output, /visibility|球號|點此查看下注內容/);
+  assert.doesNotMatch(output, /未辨識/, '舊資料未帶碰數時，也不能把缺少車數文字擠在號碼旁');
+  const counted = context.formatStructuredSelection('二星連碰', '二星連碰｜03,23,25,36,37｜下注金額 10000', { source: '喜', combinationCount: 10 });
+  assert.doesNotMatch(counted, /未辨識/, '網站碰數已在計數欄，不能顯示缺少車數為未辨識');
+});
 const suppressionSource = html.match(/function suppressKdLegacyRows[\s\S]*?(?=\nfunction displayBets)/)?.[0];
 assert.ok(suppressionSource, "kd legacy suppression must be present");
 vm.runInNewContext(`${suppressionSource};globalThis.suppressKdLegacyRows=suppressKdLegacyRows`, context);

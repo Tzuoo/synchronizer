@@ -62,3 +62,42 @@ test('特殊包牌金額與碰數依表頭，找不到欄位不取整批金額',
   assert.equal(scope.betRowNumberByHeader(row, '碰數'), 2380);
   assert.equal(scope.betRowNumberByHeader(row, '車數'), null);
 });
+
+test('喜下注明細只讀號碼文字，並辨認獨立的已撤單標籤', () => {
+  const scope = context('kd998.net');
+  const row = { querySelector: selector => selector === '.col-content' ? { textContent: 'visibility visibility球號03,23,25,36,37 點此查看下注內容' } : null };
+  assert.equal(scope.kdBetContent(row), '03,23,25,36,37');
+  const item = {
+    innerText: '6\n二星連碰\n03,23,25,36,37\n已撤單',
+    textContent: '6二星連碰03,23,25,36,37已撤單',
+    querySelectorAll: () => [{ children: [], textContent: '已撤單' }],
+  };
+  assert.equal(scope.kdBetStatus(item), '已取消');
+  assert.equal(scope.kdBetStatus({ ...item, querySelectorAll: () => [{ children: [], textContent: '刪單' }], innerText: '刪單' }), '待結算');
+});
+
+test('喜第 6 批 DOM 解析保留二星連碰與撤單，不收圖示字串', () => {
+  const scope = context('kd998.net');
+  const cell = value => ({ textContent: value });
+  const rowCells = { '.col-play': '二星連碰', '.col-content': 'visibility visibility球號03,23,25,36,37 點此查看下注內容', '.col-money': '10000' };
+  const header = { children: ['玩法', '內容', '賠率', '本金', '每碰金額', '碰數', '下注金額'].map(cell) };
+  const row = { querySelector: selector => rowCells[selector] == null ? null : cell(rowCells[selector]), closest: () => ({ querySelector: () => header }), children: ['二星連碰', '03,23,25,36,37', '53', '71.8', '1000', '10', '10000'].map(cell), textContent: '二星連碰 03,23,25,36,37 10000' };
+  const summary = { querySelector: selector => selector === '.col-money' ? cell('10000') : null };
+  const itemCells = { '.bet_item_no': '6', '.bet_cnt > p.btm--gold': '2026-09-30', '.bet_time': '19:38:51' };
+  const item = {
+    querySelector: selector => selector === '.table .sumup_row' ? summary : itemCells[selector] == null ? null : cell(itemCells[selector]),
+    querySelectorAll: selector => selector === '.table .tr:not(.bg--title--black):not(.sumup_row)' ? [row] : selector === '*' ? [{ children: [], textContent: '已撤單' }] : [],
+    innerText: '6\n二星連碰\n已撤單', textContent: '6二星連碰已撤單',
+  };
+  const group = { id: 'F-test', querySelector: () => cell('539'), querySelectorAll: () => [item] };
+  const root = { querySelector: () => ({ querySelectorAll: () => [group] }) };
+  const bets = scope.scrapeKdOrders(root);
+  assert.equal(bets.length, 1);
+  assert.equal(bets[0].itemNumber, '6');
+  assert.equal(bets[0].playType, '二星連碰');
+  assert.equal(bets[0].status, '已取消');
+  assert.equal(bets[0].betAmount, 10000);
+  assert.equal(bets[0].combinationCount, 10);
+  assert.match(bets[0].selection, /03,23,25,36,37/);
+  assert.doesNotMatch(bets[0].selection, /visibility|點此查看下注內容/);
+});
