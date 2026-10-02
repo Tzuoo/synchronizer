@@ -40,6 +40,8 @@ const context = {
     return Number.isFinite(number) ? number : null;
   },
 };
+const shared = await readFile(new URL("../../RuntimeData/同步器擴充功能/src/content/shared.js", import.meta.url), "utf8");
+vm.runInNewContext(shared.match(/function numeric\([\s\S]*?(?=\nfunction starCountFor)/)[0], context);
 vm.runInNewContext(`${source};globalThis.scrape=scrapeSharedLedger`, context);
 
 test("風雲同型總帳依網站原始遊戲分區保存", () => {
@@ -49,6 +51,30 @@ test("風雲同型總帳依網站原始遊戲分區保存", () => {
     ["六合", "S590", "台號", 4500, 1720.0000762939],
     ["539", "C115209", "正碼", 3000, 600],
   ]);
+});
+
+test("喜實站總帳同一期巢狀兩列逐筆對齊，不串接名稱或金額", () => {
+  context.location.hostname = "www2.kd998.net";
+  context.rootDomain = () => "kd998.net";
+  const nested = values => ({ ...node(values.join(" ")), children: values.map(value => ({ ...node(value), classList: { contains: name => name === "td" } })) });
+  const row = makeRow("539", ["第F106985期 >", "", "", "", "", "", ""]);
+  row.children[1] = nested(["正碼", "三星"]);
+  row.children[2] = nested(["74290", "23800"]);
+  row.children[4] = nested(["16960", "0"]);
+  const makeLedger = () => ({ querySelectorAll: selector => selector === ".tr.tr-head .th" ? ["期數 [ 日期 ]", "名稱", "總量", "退水", "中獎", "輸贏", "小計"].map(node) : selector === ".tr.tr-body" ? [row] : [] });
+  try {
+    const rows = context.scrape({ querySelector: () => makeLedger() }, new Date("2026-10-02T15:00:00Z"));
+    assert.deepEqual(JSON.parse(JSON.stringify(rows.map(r => [r.source, r.phaseName, r.playType, r.totalAmount, r.winningAmount]))), [
+      ["喜", "F106985", "正碼", 74290, 16960], ["喜", "F106985", "三星", 23800, 0],
+    ]);
+    row.children[4] = nested(["16960"]);
+    assert.equal(context.scrape({ querySelector: () => makeLedger() }).length, 0, "巢狀欄位數量不一致不可串接或猜配對");
+    row.children[4] = nested(["16960", ""]);
+    assert.equal(context.scrape({ querySelector: () => makeLedger() }).length, 1, "缺值不得當成 0");
+  } finally {
+    context.location.hostname = "www.vs968.net";
+    context.rootDomain = () => "vs968.net";
+  }
 });
 
 test("喜與風雲共用表頭解析但網站來源不可混用", () => {

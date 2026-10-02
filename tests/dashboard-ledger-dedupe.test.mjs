@@ -50,3 +50,18 @@ test("不同帳號或不同網站的同一期總帳不可合併", () => {
   ]);
   assert.equal(rows.length, 3);
 });
+
+test("喜已存錯誤的正碼三星串接列，僅有同範圍兩筆原列及串接金額證據才排除", () => {
+  const base = { site: "喜", account: "a0593", date: "2026-10-02", gameName: "539", phaseName: "F106985" };
+  const regular = { ...base, id: "regular", playType: "正碼", totalAmount: 74290, winningAmount: 16960 };
+  const star = { ...base, id: "star", playType: "三星", totalAmount: 23800, winningAmount: 0 };
+  const corrupt = { ...base, id: "corrupt", playType: "正碼 三星", totalAmount: 7429023800, winningAmount: 169600 };
+  const rows = context.dedupeLedgerRows([corrupt, regular, star]);
+  assert.deepEqual(Array.from(rows, r => r.id), ["regular", "star"]);
+  assert.equal(rows.reduce((sum, r) => sum + r.totalAmount, 0), 98090);
+  assert.equal(rows.reduce((sum, r) => sum + r.winningAmount, 0), 16960);
+  for (const changed of [{ site: "98" }, { account: "other" }, { date: "2026-10-01" }, { phaseName: "F106984" }, { gameName: "大樂" }, { totalAmount: 1000 }, { winningAmount: 100 }]) {
+    assert.equal(context.dedupeLedgerRows([{ ...corrupt, ...changed }, regular, star]).length, 3);
+  }
+  assert.equal(context.dedupeLedgerRows([corrupt, regular]).length, 2);
+});

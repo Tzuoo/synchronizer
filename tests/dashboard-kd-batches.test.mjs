@@ -37,6 +37,12 @@ test('喜既有二星連碰資料不顯示圖示文字或提示文案', () => {
   const counted = context.formatStructuredSelection('二星連碰', '二星連碰｜03,23,25,36,37｜下注金額 10000', { source: '喜', combinationCount: 10 });
   assert.doesNotMatch(counted, /未辨識/, '網站碰數已在計數欄，不能顯示缺少車數為未辨識');
 });
+
+test('風雲既有四星連碰資料只顯示網站號碼，不顯示圖示與操作文案', () => {
+  const output = context.formatStructuredSelection('四星連碰', '四星連碰 visibility visibility_off 05, 23, 25, 36, 37 點此查看下注內容 顯示當時固定賠', { source: '風雲' });
+  assert.match(output, /05, 23, 25, 36, 37/);
+  assert.doesNotMatch(output, /visibility|點此查看下注內容|顯示當時固定賠/);
+});
 const suppressionSource = html.match(/function suppressKdLegacyRows[\s\S]*?(?=\nfunction displayBets)/)?.[0];
 assert.ok(suppressionSource, "kd legacy suppression must be present");
 vm.runInNewContext(`${suppressionSource};globalThis.suppressKdLegacyRows=suppressKdLegacyRows`, context);

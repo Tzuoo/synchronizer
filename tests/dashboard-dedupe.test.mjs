@@ -155,6 +155,23 @@ test("風雲 539 表格與 gateway 名稱格式不同仍只保留網站兩批", 
   assert.ok(result.every(row => row.ids.length === 2));
 });
 
+test("風雲四星連碰與 gateway 四星同批一對一配對，真正雙批仍保留", () => {
+  const base = { source: "風雲", account: "a0593", placedAt: "2026-10-02T19:28:49+08:00", betAmount: 1000, stake: 1000, status: "待結算" };
+  const dom = { ...base, id: "vs968.net|a0593|table|1", itemNumber: "1", event: "539 / 四星連碰", playType: "四星連碰", selection: "四星連碰 visibility visibility_off 05, 23, 25, 36, 37 點此查看下注內容" };
+  const gateway = { ...base, id: "vs968.net|a0593|gateway|123|1", event: "四星", playType: "四星", selection: "5&23&25&36&37" };
+  for (const rows of [[dom, gateway], [gateway, dom]]) {
+    const result = context.dedupeExactBets(rows);
+    assert.equal(result.length, 1);
+    assert.equal(result[0].playType, "四星連碰");
+    assert.equal(result[0].itemNumber, "1");
+    assert.deepEqual(Array.from(result[0].ids), rows.map(row => row.id));
+  }
+  assert.equal(context.dedupeExactBets([dom, { ...dom, id: "vs968.net|a0593|table|2", itemNumber: "2" }, gateway, { ...gateway, id: "vs968.net|a0593|gateway|124|1" }]).length, 2);
+  for (const changed of [{ account: "other" }, { betAmount: 2000 }, { placedAt: "2026-10-02T19:28:50+08:00" }, { selection: "5&23&25&36&38" }, { status: "已撤單" }]) {
+    assert.equal(context.dedupeExactBets([dom, { ...gateway, ...changed }]).length, 2);
+  }
+});
+
 test("風雲 539 正碼與 gateway 全車同一批只保留網站原始正碼", () => {
   assert.match(extension, /const carCount = numeric\(text\(row, "\.col-unit"\)\)/);
   assert.match(extension, /carCount: carCount > 0 \? carCount : null/);

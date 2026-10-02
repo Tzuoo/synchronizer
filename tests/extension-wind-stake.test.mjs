@@ -41,3 +41,27 @@ test('風雲實際六批六合台號保留下注金額，不再次乘支數', ()
     assert.deepEqual(Array.from(rows,b=>[b.selection,b.betAmount,b.carCount]),details.map(([n,a,c])=>[`台號 ${n}`,a,c]));
   });
 });
+
+test('風雲實站四星連碰讀取每碰200與5碰，保留原 selection 以維持舊 ID', async () => {
+  const rawContent = 'visibility visibility_off 05, 23, 25, 36, 37   點此查看下注內容   顯示當時固定賠';
+  const header = { children: ['玩法','內容','賠率','本金','每碰金額','碰數','下注金額','退水漲跌','退水金額','小計'].map(textContent=>({textContent})) };
+  const row = { values: { '.col-play':'四星連碰', '.col-content':rawContent, '.col-money':'1000', '.col-unit':'', '.col-total':'487' }, textContent:'四星連碰 05, 23, 25, 36, 37', children:['四星連碰',rawContent,'8000','47.50','200','5','1000','-12','513','487'].map(textContent=>({textContent})), closest:()=>({querySelector:()=>header}) };
+  const item = { number:'1', time:'19:28:49', querySelectorAll:()=>[row] };
+  const context = {
+    document:{ querySelector:()=>({}), querySelectorAll:()=>[{ querySelectorAll:()=>[item] }] },
+    location:{ hostname:'www.vs968.net' }, rootDomain:()=> 'vs968.net', HOST_NAMES:{}, SITE_NAMES:{'vs968.net':'風雲'},
+    text:(node, selector)=>selector === '.panel_title span' ? '539 / 四星連碰' : selector === '.bet_item_no' ? node.number : selector === '.bet_cnt > p.btm--gold' ? '2026-10-02' : selector === '.bet_time' ? node.time : node.values?.[selector] || '',
+    numeric:value=>Number(String(value).replace(/[^0-9.-]/g,'')), enrichedBet:(base, extra)=>({...base,...extra}), exactItemNumber:value=>value,
+    orderStatusFromText:()=> '待結算', closestText:node=>node.textContent,
+  };
+  vm.runInNewContext(source, context);
+  const [bet] = context.scrape();
+  assert.equal(bet.playType, '四星連碰');
+  assert.equal(bet.selection, `四星連碰 ${rawContent}`);
+  assert.equal(bet.betAmount, 1000);
+  assert.equal(bet.unitAmount, 200);
+  assert.equal(bet.combinationCount, 5);
+  const background = await readFile(new URL('../../RuntimeData/同步器擴充功能/background.js', import.meta.url), 'utf8');
+  vm.runInNewContext(background.match(/function stableBetTail[\s\S]*?(?=\nlet installationIdPromise)/)[0], context);
+  assert.equal(context.stableBetTail(bet, 'original', 0), context.stableBetTail({...bet, selection:`四星連碰 ${rawContent}`, unitAmount:1000, combinationCount:null}, 'original', 0));
+});
