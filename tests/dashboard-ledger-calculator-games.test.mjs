@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 
+test('手機計算器不繼承全站980px表格下限，加總過程可在受限grid內完整換行', () => {
+  const source = readFileSync(new URL('../ledger-calculator.js', import.meta.url), 'utf8');
+  const mobile = source.slice(source.indexOf('@media(max-width:640px)'), source.indexOf('`;'));
+  assert.match(mobile, /\.ledger-calc-table\{[^}]*min-width:0[^}]*table-layout:fixed/);
+  assert.match(source, /\.ledger-calc-game\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(source, /\.ledger-calc-detail-lines\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(source, /\.ledger-calc-detail-lines>div\{[^}]*min-width:0[^}]*white-space:normal[^}]*overflow-wrap:anywhere/);
+});
+
 test('三星套餐緊接三星、三星與四星除數預設正確且結果以摘要和表格呈現', () => {
   const source = readFileSync(new URL('../ledger-calculator.js', import.meta.url), 'utf8');
   const helpers = source.split('\n').filter(line => /const (defaultDivisor|divisorFor|savedDivisorFor|playRank) =/.test(line)).join('\n');
