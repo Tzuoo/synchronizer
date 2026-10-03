@@ -9,6 +9,13 @@ assert.ok(source, "structured selection functions must be present");
 const context = { money: (value) => `$${Number(value).toLocaleString("en-US")}` };
 vm.runInNewContext(`${source};globalThis.formatStructuredSelection=formatStructuredSelection`, context);
 
+test('喜三星柱碰保留三柱及最後換行號碼，不把金額或未辨識車數塞進內容', () => {
+  const output=context.formatStructuredSelection('三星柱碰','三星柱碰｜一柱:\n02,12,22\n二柱:\n07,17,27,37\n三柱:\n01,03,04\n38,39｜下注金額 19200',{source:'喜'});
+  for(const value of ['一柱','二柱','三柱','02,12,22','38,39']) assert.ok(output.includes(value));
+  assert.doesNotMatch(output,/未辨識|下注金額/);
+  assert.equal((output.match(/class="pillar-line"/g)||[]).length,3);
+});
+
 test('無標籤長號碼跨完整欄寬，連柱碰保留全部號碼及獨立碰撞組', () => {
   assert.match(html, /\.pillar-line\s*>\s*\.pillar-values:only-child\s*\{\s*grid-column:1\/-1\s*\}/);
   const numbers = '01, 02, 03, 04, 06, 07, 08, 09, 10, 11, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 23, 24, 26, 27, 28, 29, 30, 31, 32, 33, 34, 36, 37, 38, 39';

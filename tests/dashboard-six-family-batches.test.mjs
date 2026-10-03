@@ -34,6 +34,20 @@ const base = {
   reconciled: false,
 };
 
+test('風雲六合特碼保持原名與支數，配對後仍依來源細項順序顯示', () => {
+  const rows=context.displayRows([
+    {...base,id:'dom-22',ids:['dom-22','wind|gateway|123|2'],source:'風雲',event:'六合 / S601 - 002',playType:'特碼',selection:'特碼 22',carCount:5,stake:500,betAmount:500},
+    {...base,id:'dom-20',ids:['dom-20','wind|gateway|123|1'],source:'風雲',event:'六合 / S601 - 002',playType:'特碼',selection:'特碼 20',carCount:5,stake:500,betAmount:500},
+  ]);
+  assert.equal(rows.length,1); assert.equal(rows[0].displayEvent,'特碼'); assert.equal(rows[0].countLabel,'10支');
+  assert.match(rows[0].displaySelection,/20[\s\S]*22/); assert.doesNotMatch(rows[0].displaySelection,/特碼 20|車/);
+});
+
+test('風雲六合同秒同玩法的不同真實項次不能收成一批', () => {
+  const rows=context.displayRows(['1','2'].map(itemNumber=>({...base,id:`dom-${itemNumber}`,source:'風雲',event:'六合 / S601 - 002',playType:'特碼',selection:'特碼 20',itemNumber,stake:500,betAmount:500,carCount:5})));
+  assert.equal(rows.length,2); assert.deepEqual(Array.from(rows,row=>row.itemNumber),['1','2']);
+});
+
 test("只有風雲六合 gateway 明細會合併成台號批次", () => {
   const rows = context.displayRows([
     { ...base, id: "wind-1|gateway|x|1", source: "風雲", event: "六合 / 台號", playType: "台號" },

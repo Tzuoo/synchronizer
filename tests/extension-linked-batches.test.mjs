@@ -101,3 +101,26 @@ test('喜第 6 批 DOM 解析保留二星連碰與撤單，不收圖示字串', 
   assert.match(bets[0].selection, /03,23,25,36,37/);
   assert.doesNotMatch(bets[0].selection, /visibility|點此查看下注內容/);
 });
+
+test('喜實站三星柱碰依表頭讀每碰50及384碰，不能因補欄位更換撤單舊ID', () => {
+  const scope=context('kd998.net'),cell=textContent=>({textContent});
+  const content='一柱:\n02,12,22\n二柱:\n07,17,27,37\n三柱:\n01,03,04\n38,39';
+  const header={children:['玩法','內容','賠率','本金','每碰金額','碰數','下注金額','退水漲跌','退水金額','小計'].map(cell)};
+  const values={'.col-play':'三星柱碰','.col-content':`visibility visibility_off ${content} 點此查看下注內容`,'.col-money':'19200','.col-total':'12259.20'};
+  const row={querySelector:selector=>values[selector]==null?null:cell(values[selector]),closest:()=>({querySelector:()=>header}),children:['三星柱碰',content,'570','62.80','50','384','19200','-201.60','6940.80','12259.20'].map(cell),textContent:`三星柱碰 ${content}`};
+  const summary={querySelector:selector=>selector==='.col-money'?cell('19200'):null};
+  const itemValues={'.bet_item_no':'1 已撤單','.bet_cnt > p.btm--gold':'2026-10-03','.bet_time':'18:44:55'};
+  const item={querySelector:selector=>selector==='.table .sumup_row'?summary:itemValues[selector]==null?null:cell(itemValues[selector]),querySelectorAll:selector=>selector==='*'?[{children:[],textContent:'已撤單'}]:[row],textContent:'1 已撤單'};
+  const group={id:'G-test',querySelector:()=>cell('539 / F106986 - 002'),querySelectorAll:()=>[item]};
+  const root={querySelector:()=>({querySelectorAll:()=>[group]})};
+  const [bet]=scope.scrapeKdOrders(root);
+  assert.equal(bet.unitAmount,50); assert.equal(bet.combinationCount,384); assert.equal(bet.betAmount,19200);
+  assert.equal(bet.itemNumber,null,'撤單標籤不能順便改變來源識別規則；顯示項次由配對來源補足');
+  assert.equal(bet.id,'w1.kd998.net|kd-batch|G-test|1 已撤單|2026-10-03|18:44:55');
+  assert.equal(bet.selection,`三星柱碰｜${content}｜下注金額 19200`);
+  assert.equal(scope.scrapeKdOrders(root)[0].id,bet.id);
+  header.children=[];
+  const [missing]=scope.scrapeKdOrders(root);
+  assert.equal(missing.unitAmount,null); assert.equal(missing.combinationCount,null,'無表頭不能用金額與號碼反推碰數');
+  assert.equal(missing.id,bet.id);
+});

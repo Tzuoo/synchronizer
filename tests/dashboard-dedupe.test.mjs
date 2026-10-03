@@ -10,6 +10,34 @@ assert.ok(source, "dashboard dedupe functions must be present");
 const context = {};
 vm.runInNewContext(`${source};globalThis.isDeletedBet=isDeletedBet;globalThis.dedupeExactBets=dedupeExactBets;globalThis.collapseWindNumberBatches=collapseWindNumberBatches`, context);
 
+test('喜實站三星柱碰三柱完整順序相符才與 gateway 一對一配對', () => {
+  const base = { source:'喜', account:'test', placedAt:'2026-10-03T18:44:55+08:00', betAmount:19200, status:'已撤單' };
+  const dom = {...base, id:'kd|kd-batch|G-test|1 已撤單', itemNumber:null, playType:'三星柱碰', event:'三星柱碰', selection:'三星柱碰｜一柱:\n02,12,22\n二柱:\n07,17,27,37\n三柱:\n01,03,04\n38,39｜下注金額 19200', rawText:'539 / F106986 - 002'};
+  const gateway = {...base, id:'kd|kd-gateway-batch|123', itemNumber:'1', playType:'三星', event:'三星', selection:'三星｜2~12~22&7~17~27~37&1~3~4~38~39｜下注金額 19200｜車數 未辨識', rawText:JSON.stringify({game:{seq:'F106986'},group:{no:2}})};
+  for (const rows of [[dom,gateway],[gateway,dom]]) {
+    const result=context.dedupeExactBets(rows);
+    assert.equal(result.length,1);
+    assert.equal(result[0].playType,'三星柱碰');
+    assert.equal(result[0].itemNumber,'1');
+    assert.equal(result[0].ids.length,2);
+  }
+  assert.equal(context.dedupeExactBets([dom,{...dom,id:'kd|kd-batch|G-test|2'},gateway,{...gateway,id:'kd|kd-gateway-batch|124'}]).length,2);
+  for (const changed of [{account:'other'},{betAmount:19201},{status:'待結算'},{selection:gateway.selection.replace('2~12~22','12~2~22')},{rawText:JSON.stringify({game:{seq:'F106987'},group:{no:2}})}]) {
+    assert.equal(context.dedupeExactBets([dom,{...gateway,...changed}]).length,2);
+  }
+});
+
+test('風雲六合特碼與特別號只在明示期別群組及內容相符時配對', () => {
+  const base={source:'風雲',account:'test',placedAt:'2026-10-03T18:09:40+08:00',stake:500,betAmount:500,status:'待結算'};
+  const dom={...base,id:'wind|table|1',event:'六合 / S601 - 002',playType:'特碼',selection:'特碼 20',carCount:5};
+  const gateway={...base,id:'wind|gateway|123|1',event:'特別號',playType:'特別號',selection:'20',rawText:JSON.stringify({casino:1,game:{seq:'S601'},group:{no:2}})};
+  for(const rows of [[dom,gateway],[gateway,dom]]) {
+    const result=context.dedupeExactBets(rows);
+    assert.equal(result.length,1); assert.equal(result[0].playType,'特碼'); assert.equal(result[0].ids.length,2);
+  }
+  for(const changed of [{rawText:''},{rawText:JSON.stringify({casino:3,game:{seq:'F106986'},group:{no:2}})},{selection:'22'},{status:'已撤單'}]) assert.equal(context.dedupeExactBets([dom,{...gateway,...changed}]).length,2);
+});
+
 test('刪單只依明確狀態，不掃描下注內容或操作文字', () => {
   const base = { status: '待結算', rawText: '台號 02　刪單　取消　新增備註', selection: '取消連碰', event: '刪單說明', note: '可取消後重選' };
   assert.equal(context.isDeletedBet(base), false);
