@@ -29,13 +29,15 @@ test('隔離本機服務：中文快取、擴充預檢、来源限制與同前�
     assert.ok(directory.startsWith(path.join(tmpdir(), 'synchronizer-access-test-')));
     await rm(directory, { recursive: true, force: true });
   });
+  let requestNumber=0;
   const request = (route, method = 'GET', headers = {}, body = '') => new Promise((resolve, reject) => {
+    const number=++requestNumber;
     const req = http.request({ hostname: '127.0.0.1', port, path: route, method, headers: { ...headers, ...(body ? { 'content-length': Buffer.byteLength(body) } : {}) } }, res => {
       let data = ''; res.setEncoding('utf8'); res.on('data', value => data += value);
       res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, data }));
     });
     req.setTimeout(2000, () => req.destroy(new Error('request timeout')));
-    req.on('error', reject); req.end(body);
+    req.on('error', error => reject(Object.assign(error, { requestNumber: number, requestRoute: route, requestMethod: method, requestOrigin: headers.origin || '', bytesRead: req.socket?.bytesRead, bytesWritten: req.socket?.bytesWritten, reusedSocket: req.reusedSocket }))); req.end(body);
   });
   let ready = false;
   for (let i = 0; i < 50; i++) {
@@ -84,12 +86,21 @@ test('隔離本機服務：中文快取、擴充預檢、来源限制與同前�
   const mixed = [...rows, { id: 'old', date: '2020-01-01', totalAmount: 999 }];
   assert.equal((await request('/__sync/ledger-cache', 'POST', { 'x-sync-encoding': 'base64' }, Buffer.from(JSON.stringify({ rows: mixed })).toString('base64'))).status, 200);
   assert.deepEqual(JSON.parse((await request('/__sync/ledger')).data).rows, rows);
+  // Rapid fresh connections must receive complete responses, including rejected
+  // bodies. Do not retry: a reset on any legitimate request is a failure.
+  for (let i = 0; i < 30; i++) {
+    assert.equal((await request('/__sync/health')).status, 200);
+    assert.equal((await request('/__sync/cache', 'POST', {}, '{"bets":[]}')).status, 400);
+  }
   const slow=net.createConnection({host:'127.0.0.1',port});
+  let slowError;
+  slow.on('error', error => { slowError = error; });
   await once(slow,'connect');
   slow.write(`GET /__sync/health HTTP/1.1\r\nHost: 127.0.0.1:${port}\r\nX-Slow: `);
   const started=Date.now();
   try {
     assert.equal((await request('/__sync/health')).status,200);
     assert.ok(Date.now()-started<2500,'a stalled header must not block other loopback requests for 15 seconds');
+    assert.ok(!slowError || slowError.code === 'ECONNRESET', 'only the intentionally stalled connection may be reset');
   } finally { slow.destroy(); }
 });

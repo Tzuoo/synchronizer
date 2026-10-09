@@ -15,6 +15,37 @@ function page(status = '(已刪單)', play = '三星', item = '3') {
   const batch = `${item} ${play}\n連柱碰\n2026-09-02\n18:12:15\n${status}\n${numbers}\n碰\n05,15,25,35 570 62.6 10 2380 23800 0 -243.95 8657.25 15142.75\n新增備註 單項金額總計 23800 0 -243.95 8657.25 15142.75`;
   return { body: { innerText: `【539】 第 C115213 期\n${batch}` }, querySelectorAll: selector => selector === 'td,th' ? [{ innerText: item, closest: () => ({ innerText: batch }) }] : [] };
 }
+function singleStarPage(rows, unit, item) {
+  const detail = rows.map(selection => `${selection} 正常顯示 顯示去除 8000 49.5 ${unit} 1 ${unit} 0 0 0 ${unit}`).join('\n');
+  const batch = `${item}\n四星\n單碰\n2026-10-09\n18:20:59\n${detail}\n新增備註 單項金額總計 ${rows.length * unit}`;
+  return { body: { innerText: `【539】 第 C115245 期\n${batch}` }, querySelectorAll: selector => selector === 'td,th' ? [{ innerText: String(item), closest: () => ({ innerText: batch }) }] : [] };
+}
+const singleRows = ['01,04,13,36','04,06,09,35','04,10,20,39','06,13,34,39','09,10,13,21','09,12,23,33','10,12,28,35','10,32,34,36'];
+for (const [host, rows, unit, item] of [['188hot.net',singleRows,120,3],['and539.com',singleRows.slice(1),200,4]]) {
+  test(`${host} 實站四星單碰完整保留同批所有組及網站碰數`, () => {
+    const scope=context(host),parse=host==='and539.com'?scope.scrapeUmhOrders:scope.scrape188Orders;
+    const [bet]=parse(singleStarPage(rows,unit,item));
+    assert.ok(bet,'不得漏掉單碰批次');
+    assert.equal(bet.playType,'四星單碰');
+    assert.equal(bet.itemNumber,String(item));
+    assert.equal(bet.selection,rows.map(x=>x.replaceAll(',',', ')).join('\n'));
+    assert.equal(bet.unitAmount,unit); assert.equal(bet.combinationCount,rows.length);
+    assert.equal(bet.betAmount,rows.length*unit);
+    assert.equal(parse(singleStarPage(rows,unit,item))[0].id,bet.id);
+    const broken=singleStarPage(rows,unit,item);
+    broken.body.innerText=broken.body.innerText.replace(`單項金額總計 ${rows.length*unit}`,`單項金額總計 ${rows.length*unit+1}`);
+    assert.equal(parse(broken).length,0,'列金額與批次小計不一致不得宣告完整');
+  });
+}
+test('海勝2 實站三星連碰換行24號與2024碰不截成最後4號', () => {
+  const scope=context('and539.com');
+  const selection='02,03,04,06,07,08,12,13,14,16\n17,18,22,23,24,26,27,28,32,33\n34,36,37,38';
+  const batch=`8 三星\n連碰\n2026-10-09\n19:50:16\n${selection}\n顯示去除 570 62.6 25 2024 50600 0 0 0 50600\n新增備註 單項金額總計 50600`;
+  const root={body:{innerText:`【539】 第 C115245 期\n${batch}`},querySelectorAll:()=>[]};
+  const [bet]=scope.scrapeUmhOrders(root);
+  assert.equal(bet.selection,selection.replace(/\n|,/g,', '));
+  assert.equal(bet.combinationCount,2024); assert.equal(bet.unitAmount,25); assert.equal(bet.betAmount,50600);
+});
 for (const host of ['hyp98.com', '188hot.net', 'bnd139.com', 'umh693.com', 'and539.com']) {
   test(`${host} 連柱碰保留原名、完整兩組、原始碰數及刪單`, () => {
     const scope = context(host);

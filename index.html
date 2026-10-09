@@ -26,7 +26,7 @@ main{max-width:1500px;margin:auto;padding:12px}.metrics{display:grid;grid-templa
 <section id="ledgerDemo" class="ledger-demo" hidden></section>
 <section id="betsPanel" class="panel"><div class="panel-head"><div><b>下注資料</b><small id="count"></small><span class="resize-hint">拖曳表頭藍灰色分隔線可調整寬度</span></div><div class="filters"><input id="query" placeholder="搜尋帳號、網站或內容"><label class="desktop-font-control">資料字體大小<input id="desktopFontSize" type="range" min="12" max="24" step="1" value="16"></label><label class="mobile-width-control">數值格寬度<input id="mobileCellWidth" type="range" min="88" max="180" step="2" value="104"></label><label class="mobile-width-control">資料字體大小<input id="mobileFontSize" type="range" min="13" max="22" step="1" value="15"></label></div></div><div class="table-wrap"><table id="betsTable"><colgroup><col style="width:52px"><col><col><col><col><col><col><col></colgroup><thead><tr><th>項次</th><th>投注內容</th><th>單位金額</th><th>碰數／車數／支數</th><th>下注總額</th><th>時間／網站</th><th>帳號</th><th>對帳</th></tr></thead><tbody id="rows"></tbody></table></div></section></main>
 <script src="remote-diagnostics.js"></script>
-<script src="ledger-calculator.js?build=103"></script>
+<script src="ledger-calculator.js?build=104"></script>
 <script>
 const lock=document.querySelector('#lock'),lockForm=document.querySelector('#lockForm'),lockPassword=document.querySelector('#lockPassword'),lockError=document.querySelector('#lockError');
 const API_ROOT="https://live-bet-reconciliation.tsoyis0520.chatgpt.site/api",API=`${API_ROOT}/bets`,PAGE_PARAMS=new URLSearchParams(location.search),IS_LEDGER_VIEW=PAGE_PARAMS.get('view')==='ledger'||PAGE_PARAMS.get('ledger-demo')==='1',IS_LOCAL_PREVIEW=['localhost','127.0.0.1'].includes(location.hostname);
@@ -40,7 +40,7 @@ function authHeaders(extra={}){return {...extra,authorization:`Bearer ${authToke
 function requireLogin(message='登入已失效，請重新輸入密碼'){authToken='';sessionStorage.removeItem('synchronizerSession');if(IS_LOCAL_PREVIEW)return;lock.classList.remove('hidden');lockError.textContent=message;lockPassword.focus()}
 lockForm.addEventListener('submit',async e=>{e.preventDefault();lockError.textContent='驗證中…';try{const{response:r,payload:data}=await fetchJsonWithTimeout(`${API_ROOT}/auth`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({password:lockPassword.value})});if(!r.ok||!data.token){lockError.textContent=r.status===429?'嘗試次數過多，請稍後再試':'密碼錯誤，請重新輸入';lockPassword.select();return}authToken=data.token;sessionStorage.setItem('synchronizerSession',authToken);lock.classList.add('hidden');lockPassword.value='';lockError.textContent='';await Promise.all([IS_LEDGER_VIEW?loadLedger():load(),loadClientStatus()])}catch{lockError.textContent='暫時無法登入，請稍後再試'}});
 
-const BUILD="103",names=["風雲","98","喜","16","28","海勝","海勝2","航海"];let bets=[],site="全部網站",renderSignature="",latestExtensionVersion="",clientStatusRows=[],lastLedgerRows=null,lastLedgerDate="",lastLedgerDay="";let reconciledCache=JSON.parse(localStorage.getItem('synchronizerReconciled')||'{}');const $=s=>document.querySelector(s),money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n)||0);function saveReconciledCache(){localStorage.setItem('synchronizerReconciled',JSON.stringify(reconciledCache))}function orderSignature(rows){return rows.map(b=>[b.id,b.source,b.account,b.placedAt,b.event,b.selection,b.odds,b.stake,b.potentialPayout,b.playType,b.unitAmount,b.combinationCount,b.carCount,b.betAmount,b.itemNumber,b.parseStatus,b.status,b.result,b.reconciled]).join('|')}function betTotal(b){if(b._sixBatch)return Number(b.potentialPayout||0);if(b.source==="風雲")return Number(b.stake||0);if(["海勝","海勝2"].includes(b.source))return Number(b.potentialPayout||0);return Number(b.potentialPayout??b.stake??0)}fetchJsonWithTimeout(`version.json?ts=${Date.now()}`,{cache:'no-store'}).then(({payload:v})=>{if(String(v.build)!==BUILD){const url=new URL(location.href);url.searchParams.set('build',String(v.build));location.replace(url)}}).catch(()=>{});fetchJsonWithTimeout(`extension-version.json?ts=${Date.now()}`,{cache:'no-store'}).then(({payload:v})=>{latestExtensionVersion=String(v.version||'');$('#clientLatest').textContent=latestExtensionVersion?`最新版 ${latestExtensionVersion}`:'最新版未取得';renderClientStatus(clientStatusRows)}).catch(()=>{$('#clientLatest').textContent='最新版未取得'});
+const BUILD="104",names=["風雲","98","喜","16","28","海勝","海勝2","航海"];let bets=[],site="全部網站",renderSignature="",latestExtensionVersion="",clientStatusRows=[],lastLedgerRows=null,lastLedgerDate="",lastLedgerDay="";let reconciledCache=JSON.parse(localStorage.getItem('synchronizerReconciled')||'{}');const $=s=>document.querySelector(s),money=n=>new Intl.NumberFormat("zh-TW",{style:"currency",currency:"TWD",maximumFractionDigits:0}).format(Number(n)||0);function saveReconciledCache(){localStorage.setItem('synchronizerReconciled',JSON.stringify(reconciledCache))}function orderSignature(rows){return rows.map(b=>[b.id,b.source,b.account,b.placedAt,b.event,b.selection,b.odds,b.stake,b.potentialPayout,b.playType,b.unitAmount,b.combinationCount,b.carCount,b.betAmount,b.itemNumber,b.parseStatus,b.status,b.result,b.reconciled]).join('|')}function betTotal(b){if(b._sixBatch)return Number(b.potentialPayout||0);if(b.source==="風雲")return Number(b.stake||0);if(["海勝","海勝2"].includes(b.source))return Number(b.potentialPayout||0);return Number(b.potentialPayout??b.stake??0)}fetchJsonWithTimeout(`version.json?ts=${Date.now()}`,{cache:'no-store'}).then(({payload:v})=>{if(String(v.build)!==BUILD){const url=new URL(location.href);url.searchParams.set('build',String(v.build));location.replace(url)}}).catch(()=>{});fetchJsonWithTimeout(`extension-version.json?ts=${Date.now()}`,{cache:'no-store'}).then(({payload:v})=>{latestExtensionVersion=String(v.version||'');$('#clientLatest').textContent=latestExtensionVersion?`最新版 ${latestExtensionVersion}`:'最新版未取得';renderClientStatus(clientStatusRows)}).catch(()=>{$('#clientLatest').textContent='最新版未取得'});
 function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]))}
 function compareVersions(left,right){const a=String(left).split('.').map(Number),b=String(right).split('.').map(Number);for(let i=0;i<Math.max(a.length,b.length);i++){const difference=(a[i]||0)-(b[i]||0);if(difference)return difference}return 0}
 function renderClientStatus(rows){clientStatusRows=rows;const groups=new Map();rows.forEach(row=>{const id=String(row.installationId||'');if(!id)return;const seen=new Date(row.lastSeen).getTime();const current=groups.get(id)||{id,version:'',lastSeen:0,sites:[]};if(seen>current.lastSeen){current.lastSeen=seen;current.version=String(row.extensionVersion||'')}current.sites.push(clientSiteLabel(row.site));groups.set(id,current)});const clients=[...groups.values()].sort((a,b)=>b.lastSeen-a.lastSeen);if(!clients.length){$('#clientList').innerHTML='<div class="client-item"><small>尚未收到新版擴充回報</small></div>';return}$('#clientList').innerHTML=clients.map(client=>{const online=Date.now()-client.lastSeen<=45000,outdated=Boolean(latestExtensionVersion)&&compareVersions(client.version,latestExtensionVersion)<0,state=!online?'已離線':outdated?'需要更新':'最新版',stateClass=!online?'offline':outdated?'outdated':'',label=escapeHtml(remoteDeviceLabel(client.id)),sites=[...new Set(client.sites)].filter(Boolean).sort().join('、')||'未取得';return `<div class="client-item"><strong>${label}　<span class="client-state ${stateClass}">${state}</span></strong><small>執行版本 ${escapeHtml(client.version||'未取得')}</small><small>網站 ${escapeHtml(sites)}</small><small>最後回報 ${new Date(client.lastSeen).toLocaleString('zh-TW')}</small></div>`}).join('')}
@@ -232,7 +232,38 @@ function kdSpecialPackageKey(b){
   return groups.every(group=>group.length&&group.every(n=>Number(n)>=1&&Number(n)<=49))?groups.map(group=>group.join(",")).join("&"):"";
 }
 
+function coalesceUmhTruncatedRows(rows){
+  // Compatibility only for a source-item whose identical raw table proves a multiline correction.
+  const groups=new Map(),replacements=new Map(),removed=new Set();
+  const numbers=value=>/^\d{2}(?:\s*,\s*\d{2})*$/.test(value.trim())?value.match(/\d{2}/g).join(','):'';
+  rows.forEach((b,index)=>{
+    if(b.source!=='海勝2'||b.event!=='539 / 三星連碰'||b.playType!=='三星連碰'||!b.rawText)return;
+    const parts=String(b.id||'').split('|'),marker=parts.indexOf('source-item');
+    if(marker!==3||parts.length<9||parts[1]!=='and539.com'||parts[2]!==b.account||parts[4]!==String(b.itemNumber)||parts[5]!==b.placedAt||parts[6]!==b.event||parts[7]!==b.selection)return;
+    const scope=JSON.stringify([parts.slice(0,7),parts[8],b.status,isDeletedBet(b),b.unitAmount,b.betAmount,b.rawText]);
+    const group=groups.get(scope)||[];group.push({b,index});groups.set(scope,group);
+  });
+  for(const group of groups.values()){
+    if(group.length!==2||group.some(({b})=>String(b.id).split('|').length!==9))continue;
+    const raw=String(group[0].b.rawText),b=group[0].b;
+    if(!/項次\t玩法\t下注內容\t賠率\t本金\t每碰金額\t碰數\t下注金額/.test(raw))continue;
+    const match=raw.match(/(?:^|\n)(\d+)\t三星\s*\n連碰\s*\n(\d{4}-\d{2}-\d{2})\s*\n(\d{2}:\d{2}:\d{2})\s*\n((?:\d{2}(?:,\d{2})*\s*\n)+)(\d{2}(?:,\d{2})*)\s+顯示去除\t[\d.]+\t[\d.]+\t([\d.]+)\t(\d+)\t([\d.]+)(?:\t|$)/);
+    if(!match||match[1]!==String(b.itemNumber)||`${match[2]}T${match[3]}+08:00`!==b.placedAt)continue;
+    const fullNumbers=numbers((match[4]+match[5]).replace(/\s+/g,',')),tailNumbers=numbers(match[5]);
+    const unit=Number(match[6]),count=Number(match[7]),amount=Number(match[8]);
+    if(!fullNumbers||fullNumbers.split(',').length<=4||tailNumbers.split(',').length!==4||!Number.isFinite(unit)||unit<=0||unit*count!==amount||unit!==b.unitAmount||amount!==b.betAmount)continue;
+    const full=group.find(({b})=>numbers(String(b.selection))===fullNumbers&&b.combinationCount===count);
+    const old=group.find(({b})=>numbers(String(b.selection))===tailNumbers&&b.combinationCount===4&&unit*4!==amount);
+    if(!full||!old||full===old)continue;
+    const ids=[...new Set([...group.flatMap(({b})=>Array.isArray(b.ids)?b.ids:[]),...group.map(({b})=>b.id)])];
+    replacements.set(Math.min(full.index,old.index),{...full.b,ids,reconciled:Boolean(full.b.reconciled&&old.b.reconciled)});
+    removed.add(full.index);removed.add(old.index);
+  }
+  return rows.flatMap((b,index)=>replacements.has(index)?[replacements.get(index)]:removed.has(index)?[]:[b]);
+}
+
 function dedupeExactBets(rows){
+  rows=coalesceUmhTruncatedRows(rows);
   const result=[],seen=new Map();
   const representationGroup=(b,gateway)=>{
     if(gateway){
@@ -315,10 +346,10 @@ function dedupeExactBets(rows){
       ? candidates.find(item=>item._isGatewayRepresentation!==isGateway&&!item._representationMatched)
       : candidates.find(item=>item.id===b.id||(compatibilityKey&&sourceItemCompatibilityKey(item.id)===compatibilityKey));
     if(!existing){
-      const item={...b,ids:[b.id],_isGatewayRepresentation:isGateway,_representationMatched:false};
+      const item={...b,ids:[...new Set([...(Array.isArray(b.ids)?b.ids:[]),b.id])],_isGatewayRepresentation:isGateway,_representationMatched:false};
       candidates.push(item);seen.set(key,candidates);result.push(item);return;
     }
-    if(!existing.ids.includes(b.id))existing.ids.push(b.id);
+    for(const id of [...(Array.isArray(b.ids)?b.ids:[]),b.id])if(!existing.ids.includes(id))existing.ids.push(id);
     existing.reconciled=Boolean(existing.reconciled&&b.reconciled);
     if(isWind||isKd){
       const deletedStatus=Boolean(kdTwoStar)&&(isDeletedBet(existing)||isDeletedBet(b));

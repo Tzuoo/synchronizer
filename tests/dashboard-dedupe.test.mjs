@@ -10,6 +10,44 @@ assert.ok(source, "dashboard dedupe functions must be present");
 const context = {};
 vm.runInNewContext(`${source};globalThis.isDeletedBet=isDeletedBet;globalThis.dedupeExactBets=dedupeExactBets;globalThis.collapseWindNumberBatches=collapseWindNumberBatches`, context);
 
+function truncatedUmhPair() {
+  const selection='02, 03, 04, 06, 07, 08, 12, 13, 14, 16, 17, 18, 22, 23, 24, 26, 27, 28, 32, 33, 34, 36, 37, 38';
+  const rawText='項次\t玩法\t下注內容\t賠率\t本金\t每碰金額\t碰數\t下注金額\n8\t三星\n連碰\n2026-10-09\n19:50:16\n02,03,04,06,07,08,12,13,14,16\n17,18,22,23,24,26,27,28,32,33\n34,36,37,38 顯示去除\t570\t62.5\t25\t2024\t50600\t0\t0\t18975\t31625\n新增備註';
+  const base={source:'海勝2',account:'0593',event:'539 / 三星連碰',playType:'三星連碰',itemNumber:'8',placedAt:'2026-10-09T19:50:16+08:00',unitAmount:25,betAmount:50600,status:'待結算',rawText};
+  const id=value=>`device|and539.com|0593|source-item|8|${base.placedAt}|${base.event}|${value}|0`;
+  return [{...base,id:id('34, 36, 37, 38'),selection:'34, 36, 37, 38',combinationCount:4,reconciled:true}, {...base,id:id(selection),selection,combinationCount:2024,reconciled:false}];
+}
+
+test('海勝2 同批相同原文證明四號舊解析已被完整2024碰取代，保留全部對帳ID',()=>{
+  const [old,full]=truncatedUmhPair();
+  for(const rows of [[old,full],[full,old]]) {
+    const result=context.dedupeExactBets(rows);
+    assert.equal(result.length,1);
+    assert.equal(result[0].id,full.id); assert.equal(result[0].selection,full.selection);
+    assert.equal(result[0].combinationCount,2024); assert.equal(result[0].betAmount,50600);
+    assert.deepEqual(new Set(result[0].ids),new Set([old.id,full.id]));
+    assert.equal(result[0].reconciled,false);
+  }
+  const again=context.dedupeExactBets(context.dedupeExactBets([old,full]));
+  assert.equal(again.length,1);
+  assert.deepEqual(new Set(again[0].ids),new Set([old.id,full.id]));
+});
+
+test('海勝2 截斷相容不跨批次／裝置／帳號／盤口／狀態，不猜缺失或矛盾原文',()=>{
+  const [old,full]=truncatedUmhPair();
+  for(const change of [
+    {id:full.id.replace('|8|','|9|'),itemNumber:'9'}, {id:full.id.replace('device|','other|')},
+    {account:'other'}, {event:'大樂 / 三星連碰'}, {status:'已撤單'},
+    {rawText:''}, {rawText:full.rawText.replace('62.5','62.6')},
+    {combinationCount:2025}, {unitAmount:26}, {selection:full.selection.replace('02, 03','03, 02')}
+  ]) assert.equal(context.dedupeExactBets([old,{...full,...change}]).length,2,JSON.stringify(change));
+  assert.equal(context.dedupeExactBets([old]).length,1);
+  assert.equal(context.dedupeExactBets([old,full,{...full,id:full.id+'|another'}]).length,3);
+  const second=b=>({...b,itemNumber:'9',id:b.id.replace('|8|','|9|'),rawText:b.rawText.replace('\n8\t','\n9\t')});
+  const result=context.dedupeExactBets([old,full,second(old),second(full)]);
+  assert.equal(result.length,2); assert.ok(result.every(b=>b.ids.length===2));
+});
+
 test('喜實站三星柱碰三柱完整順序相符才與 gateway 一對一配對', () => {
   const base = { source:'喜', account:'test', placedAt:'2026-10-03T18:44:55+08:00', betAmount:19200, status:'已撤單' };
   const dom = {...base, id:'kd|kd-batch|G-test|1 已撤單', itemNumber:null, playType:'三星柱碰', event:'三星柱碰', selection:'三星柱碰｜一柱:\n02,12,22\n二柱:\n07,17,27,37\n三柱:\n01,03,04\n38,39｜下注金額 19200', rawText:'539 / F106986 - 002'};
