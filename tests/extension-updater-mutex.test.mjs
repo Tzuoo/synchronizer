@@ -13,16 +13,62 @@ const safeSource = await readFile(safeFile, 'utf8');
 const updaterSource = await readFile(updaterFile, 'utf8');
 const manualSource = await readFile(manualFile, 'utf8');
 
-function runPowerShell(script, timeout = 15000) {
-  return new Promise((resolve, reject) => {
-    const child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true });
-    let stdout = '', stderr = '';
-    child.stdout.on('data', chunk => { stdout += chunk; });
+function startPowerShell(script, timeout = 15000) {
+  let child, stdout = '', stderr = '', closed = false;
+  const waiters = new Set();
+  const notify = () => { for (const check of [...waiters]) check(); };
+  const completion = new Promise((resolve, reject) => {
+    child = spawn('powershell.exe', ['-NoLogo', '-NoProfile', '-NonInteractive', '-EncodedCommand', Buffer.from(script, 'utf16le').toString('base64')], { windowsHide: true });
+    child.stdout.on('data', chunk => { stdout += chunk; notify(); });
     child.stderr.on('data', chunk => { stderr += chunk; });
     const timer = setTimeout(() => { child.kill(); reject(new Error('PowerShell timeout')); }, timeout);
-    child.on('error', reject);
-    child.on('close', code => { clearTimeout(timer); resolve({ code, stdout, stderr }); });
+    child.on('error', error => { clearTimeout(timer); closed = true; notify(); reject(error); });
+    child.on('close', code => { clearTimeout(timer); closed = true; notify(); resolve({ code, stdout, stderr }); });
   });
+  // A failure may occur while the test awaits a readiness signal instead of completion.
+  completion.catch(() => {});
+  return {
+    completion,
+    waitForLine(prefix) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => finish(new Error(`Missing signal ${prefix}: ${stdout}${stderr}`)), timeout);
+        const finish = (error, line) => {
+          clearTimeout(timer); waiters.delete(check);
+          if (error) reject(error); else resolve(line);
+        };
+        const check = () => {
+          const line = stdout.split(/\r?\n/).find(value => value.startsWith(prefix));
+          if (line !== undefined) finish(null, line);
+          else if (closed) finish(new Error(`Exited before ${prefix}: ${stdout}${stderr}`));
+        };
+        waiters.add(check); check();
+      });
+    },
+    sendLine(line) { child.stdin.write(line + '\n'); },
+    stop() { if (!closed) child.kill(); return completion.catch(() => {}); },
+  };
+}
+
+function runPowerShell(script, timeout) { return startPowerShell(script, timeout).completion; }
+
+async function verifyContendedLock(t, target, onRelease = '', afterAcquire = '', waiterTarget = target) {
+  const safe = safeFile.replaceAll("'", "''");
+  const escapedTarget = target.replaceAll("'", "''");
+  const escapedWaiterTarget = waiterTarget.replaceAll("'", "''");
+  const owner = startPowerShell(`$ErrorActionPreference='Stop';. '${safe}';Start-Sleep -Milliseconds 900;$l=Enter-SynchronizerUpdateLock '${escapedTarget}' 5000;try{[Console]::WriteLine('OWNED');if([Console]::ReadLine() -ne 'release'){throw 'Missing release signal'};${onRelease};[Console]::WriteLine('LEAVING:'+[DateTime]::UtcNow.Ticks)}finally{Exit-SynchronizerUpdateLock $l}`);
+  t.after(() => owner.stop());
+  await owner.waitForLine('OWNED');
+  const waiter = startPowerShell(`$ErrorActionPreference='Stop';. '${safe}';$probe=$null;try{$probe=Enter-SynchronizerUpdateLock '${escapedWaiterTarget}' 150}catch{if($_.Exception.Message -ne 'Another updater is still using this extension target.'){throw};[Console]::WriteLine('BLOCKED')};if($probe){Exit-SynchronizerUpdateLock $probe;throw 'Entered while owner held target'};$l=Enter-SynchronizerUpdateLock '${escapedWaiterTarget}' 5000;try{[Console]::WriteLine('ENTERED:'+[DateTime]::UtcNow.Ticks);${afterAcquire}}finally{Exit-SynchronizerUpdateLock $l}`);
+  t.after(() => waiter.stop());
+  await waiter.waitForLine('BLOCKED');
+  owner.sendLine('release');
+  const [a, b] = await Promise.all([owner.completion, waiter.completion]);
+  assert.equal(a.code, 0, a.stdout + a.stderr);
+  assert.equal(b.code, 0, b.stdout + b.stderr);
+  const leaving = BigInt(a.stdout.match(/LEAVING:(\d+)/)[1]);
+  const entered = BigInt(b.stdout.match(/ENTERED:(\d+)/)[1]);
+  assert.ok(entered >= leaving, 'waiter entered before owner left its critical section');
+  return b;
 }
 
 test('H9 updater 宣告目標範圍跨程序鎖、執行識別與完成後驗證', { skip: process.platform !== 'win32' }, () => {
@@ -47,27 +93,24 @@ test('H9 手動與排程或兩個手動同時開始時，同一目標只能一�
   const dir = await mkdtemp(join(tmpdir(), 'sync-updater-lock-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
   const target = join(dir, 'RuntimeData', 'SynchronizerExtension');
-  const escapedSafe = safeFile.replaceAll("'", "''");
-  const escapedTarget = target.replaceAll("'", "''");
   for (const labels of [['scheduled', 'manual'], ['manual-a', 'manual-b']]) {
-    const firstScript = `$ErrorActionPreference='Stop';. '${escapedSafe}';$l=Enter-SynchronizerUpdateLock '${escapedTarget}' 5000;try{Write-Output ('${labels[0]}:'+[DateTime]::UtcNow.Ticks);Start-Sleep -Milliseconds 650}finally{Exit-SynchronizerUpdateLock $l}`;
-    const secondScript = `$ErrorActionPreference='Stop';. '${escapedSafe}';$l=Enter-SynchronizerUpdateLock '${escapedTarget}' 5000;try{Write-Output ('${labels[1]}:'+[DateTime]::UtcNow.Ticks)}finally{Exit-SynchronizerUpdateLock $l}`;
-    const first = runPowerShell(firstScript);
-    await new Promise(resolve => setTimeout(resolve, 100));
-    const second = runPowerShell(secondScript);
-    const [a, b] = await Promise.all([first, second]);
-    assert.equal(a.code, 0, a.stdout + a.stderr);
-    assert.equal(b.code, 0, b.stdout + b.stderr);
-    const aTicks = BigInt(a.stdout.trim().split(':').at(-1));
-    const bTicks = BigInt(b.stdout.trim().split(':').at(-1));
-    assert.ok(bTicks - aTicks >= 4_000_000n, `${labels.join('+')} did not serialize`);
+    await t.test(labels.join('+'), async sub => { await verifyContendedLock(sub, target); });
   }
+});
+
+test('H9 同步測試不得讓錯誤鎖 scope 冒充互斥成功', { skip: process.platform !== 'win32' }, async t => {
+  const dir = await mkdtemp(join(tmpdir(), 'sync-updater-lock-negative-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  // Fault injection only changes the test contender's target, never production code.
+  await assert.rejects(verifyContendedLock(t, join(dir, 'target'), '', '', join(dir, 'wrong-target')),
+    /Entered while owner held target/);
 });
 
 test('H9 單一手動與排程均可執行，等待者取得鎖後重新讀取已安裝版本', { skip: process.platform !== 'win32' }, async t => {
   const dir = await mkdtemp(join(tmpdir(), 'sync-updater-recheck-'));
   t.after(() => rm(dir, { recursive: true, force: true }));
-  const target = join(dir, 'RuntimeData', 'SynchronizerExtension').replaceAll("'", "''");
+  const targetDirectory = join(dir, 'RuntimeData', 'SynchronizerExtension');
+  const target = targetDirectory.replaceAll("'", "''");
   const versionFile = join(dir, 'version.txt').replaceAll("'", "''");
   const safe = safeFile.replaceAll("'", "''");
   for (const invocation of ['scheduled', 'manual']) {
@@ -75,12 +118,9 @@ test('H9 單一手動與排程均可執行，等待者取得鎖後重新讀取�
     assert.equal(single.code, 0, single.stdout + single.stderr);
     assert.match(single.stdout, new RegExp(`${invocation}-ok`));
   }
-  const first = runPowerShell(`$ErrorActionPreference='Stop';Set-Content -LiteralPath '${versionFile}' -Value '1';. '${safe}';$l=Enter-SynchronizerUpdateLock '${target}' 5000;try{Start-Sleep -Milliseconds 500;Set-Content -LiteralPath '${versionFile}' -Value '2'}finally{Exit-SynchronizerUpdateLock $l}`);
-  await new Promise(resolve => setTimeout(resolve, 100));
-  const waiter = runPowerShell(`$ErrorActionPreference='Stop';. '${safe}';$l=Enter-SynchronizerUpdateLock '${target}' 5000;try{Write-Output ('seen='+(Get-Content -LiteralPath '${versionFile}' -Raw).Trim())}finally{Exit-SynchronizerUpdateLock $l}`);
-  const [a, b] = await Promise.all([first, waiter]);
-  assert.equal(a.code, 0, a.stdout + a.stderr);
-  assert.equal(b.code, 0, b.stdout + b.stderr);
+  const initial = await runPowerShell(`Set-Content -LiteralPath '${versionFile}' -Value '1'`);
+  assert.equal(initial.code, 0, initial.stdout + initial.stderr);
+  const b = await verifyContendedLock(t, targetDirectory, `Set-Content -LiteralPath '${versionFile}' -Value '2'`, `Write-Output ('seen='+(Get-Content -LiteralPath '${versionFile}' -Raw).Trim())`);
   assert.match(b.stdout, /seen=2/);
 });
 
