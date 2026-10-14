@@ -8,18 +8,21 @@ const segment=source.slice(source.indexOf('let localPreviewRefreshPromise'),sour
 
 test('M07 remote refresh failure reports stale cache without replacing existing bets',async()=>{
   const posts=[];
+  let remoteAttempted=false;
   const context=vm.createContext({
     Date,URL,TextEncoder,btoa:value=>Buffer.from(value,'binary').toString('base64'),
     setTimeout,clearTimeout,
     chrome:{storage:{local:{get:async()=>({syncToken:'token',ledgerSnapshots:[]})}},tabs:{query:async()=>[]}},
     rootDomain:()=> 'hyp98.com',todayLedgerDate:()=> '2026-09-29',
+    getInstallationId:async()=> 'aaaaaaaa',
     withRequestTimeout:task=>task(new AbortController().signal),
     fetch:async(url,options)=>{posts.push({url,body:JSON.parse(Buffer.from(options.body,'base64').toString('utf8'))});return {ok:true};},
-    fetchAllBetPages:async()=>{throw new Error('remote down');},
+    fetchAllBetPages:async()=>{remoteAttempted=true;throw new Error('remote down');},
     DASHBOARD:'https://example.test',LOCAL_PREVIEW_CACHE:'http://127.0.0.1:8765/__sync/cache',LOCAL_REQUEST_TIMEOUT_MS:1000,
   });
   vm.runInContext(`${segment};globalThis.refresh=refreshLocalPreviewCache`,context);
   await context.refresh(true);
+  assert.equal(remoteAttempted,true);
   const cachePosts=posts.filter(post=>post.url.endsWith('/__sync/cache'));
   assert.equal(cachePosts.length,1);
   assert.deepEqual(cachePosts[0].body,{refreshOk:false,errorCode:'REMOTE_FETCH_FAILED'});

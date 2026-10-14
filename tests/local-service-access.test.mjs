@@ -58,8 +58,8 @@ test('隔離本機服務：中文快取、擴充預檢、来源限制與同前�
   assert.equal(preflight.status, 204);
   assert.equal(preflight.headers['access-control-allow-origin'], extension);
   assert.match(preflight.headers['access-control-allow-headers'], /x-sync-encoding/);
-  const bets = [{ id: 'test', playType: '台號', selection: '02', stake: 400 }];
-  const currentLists = [{complete:true,scope:'all',clientSite:'aaaaaaaa|188hot.net',account:'you320',capturedAt:'2026-10-14T12:00:00.000Z',ids:[]}];
+  const bets = [{ id: 'aaaaaaaa|188hot.net|you320|test', source:'16', account:'you320', playType: '台號', selection: '02', stake: 400 }];
+  const currentLists = [{complete:true,scope:'all',clientSite:'aaaaaaaa|188hot.net',account:'you320',capturedAt:'2026-10-14T12:00:00.000Z',lastSeen:'2026-10-14T12:00:00.000Z',ids:[]}];
   const encoded = Buffer.from(JSON.stringify({ bets, currentLists })).toString('base64');
   assert.equal((await request('/__sync/cache', 'POST', { origin: extension, 'sec-fetch-site': 'cross-site', 'x-sync-encoding': 'base64' }, encoded)).status, 200);
   assert.deepEqual(JSON.parse((await request('/__sync/bets')).data).bets, bets);
