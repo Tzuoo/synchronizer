@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 
 const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+const currentListSource=await readFile(new URL('../current-bets.js',import.meta.url),'utf8');
 const loadStart=html.indexOf('async function load(){');
 const loadSource=html.slice(loadStart,html.indexOf('\ndraw=function()',loadStart));
 
@@ -16,7 +17,7 @@ async function dashboardWith(payload){
     reconciledCache:{},bets:[],collapseWindNumberBatches:x=>x,suppressKdLegacyRows:x=>x,dedupeExactBets:x=>x,
     orderSignature:rows=>JSON.stringify(rows),renderSignature:'',draw(){},
   });
-  vm.runInContext(`${loadSource};globalThis.load=load;globalThis.rows=()=>bets`,context);
+  vm.runInContext(`${currentListSource}\n${loadSource};globalThis.load=load;globalThis.rows=()=>bets`,context);
   await context.load();
   return {label,context};
 }

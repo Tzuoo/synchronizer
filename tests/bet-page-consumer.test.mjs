@@ -19,5 +19,8 @@ for (const consumer of ['web', 'extension']) {
     assert.equal((await call()).bets.map(b => b.id).join(','), 'b,a');
     pages = [{ bets: [older, newer] }];
     assert.equal((await call()).bets.map(b => b.id).join(','), 'a,b');
+    const first={complete:true,scope:'all',ids:[]};
+    pages=[{bets:[older],currentLists:[first],page:{hasMore:true,nextCursor:'next'}},{bets:[newer],currentLists:[{...first,ids:['late']}],page:{hasMore:false}}];
+    assert.equal((await call()).currentLists[0].ids.length,0,'membership stays with the first page, not a later snapshot');
   });
 }

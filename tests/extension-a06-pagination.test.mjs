@@ -68,7 +68,7 @@ function reader(query,hostname='w3.188hot.net'){
   const manager={AddAjax(path,options){calls.push(options.params);return query(options);}};
   const original=manager.AddAjax;
   const c=vm.createContext({location:{hostname,pathname:'/prefix/Front/A/A06',href:`https://${hostname}/prefix/Front/A/A06`},document:{documentElement:{dataset:{}}},
-    Date:{now:()=>now},window:{frameElement:{name:'sync-detail-frame'},$AjaxManage:manager,postMessage:m=>messages.push(m)},
+    Date:class extends Date { constructor(value){super(value === undefined ? now : value);}static now(){return now;} },window:{frameElement:{name:'sync-detail-frame'},$AjaxManage:manager,postMessage:m=>messages.push(m)},
     AbortController,setTimeout,clearTimeout,URL});
   c.window.Mo={NowAPIPath:'/FrontA060',GetQuery(){manager.AddAjax('/FrontA060/OrderQuery',{
     params:{GameID:[13],SortType:2,PageID:2},success:r=>rendered.push(r),complete:()=>unblocks++});}};
@@ -76,7 +76,7 @@ function reader(query,hostname='w3.188hot.net'){
     const ac=new AbortController();const timer=setTimeout(()=>ac.abort(),15);
     try{return await task(ac.signal);}finally{clearTimeout(timer);}
   };
-  vm.runInContext(`let a06Busy=false,a06NextRead=0,a06NativeReads=0,a06OwnedQuery=false,a06OwnedXHR=null,packageBusy=false;${collectSource()}${extract('readFullA06')}`,c);
+  vm.runInContext(`let a06Busy=false,a06NextRead=0,a06NativeReads=0,a06OwnedQuery=false,a06OwnedXHR=null,packageBusy=false,currentA06Proof=null;${collectSource()}${extract('readFullA06')}`,c);
   class XHR{
     listeners=new Map();
     open(){} setRequestHeader(){} send(){}
@@ -134,6 +134,16 @@ test('原生初始明細仍請求中不重疊；loadend 後完整補读正常恢
   const r=reader(o=>queueMicrotask(()=>o.success(page(['ok']))));
   const xhr=r.c.makeXHR();await r.c.readFullA06();assert.equal(r.calls.length,0);
   xhr.emit('loadend');await r.c.readFullA06();assert.equal(r.rendered.length,1);
+});
+
+test('A06 只有原生全部盤口且完整成功才能提交空清單；筛选页不提交替換',async()=>{
+  for(const value of [0,'0',13]){
+    const r=reader(o=>queueMicrotask(()=>o.success({TotalCnt:0,DataList:[]})));
+    r.c.window.XI={Utils:{NowMenuValue:()=>value,NowMenuAllValue:[13]}};
+    await r.c.readFullA06();
+    const proof=r.messages.find(m=>m.type==='SYNC_CURRENT_A06');
+    if(value===13)assert.equal(proof,undefined);else{assert.equal(proof.proof.total,0);assert.equal(proof.proof.items.length,0);}
+  }
 });
 
 test('風雲／喜 Gateway 完整回應超過50批仍全數解析，不套用 A06 的畫面分頁',async()=>{
